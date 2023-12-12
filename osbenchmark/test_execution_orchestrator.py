@@ -40,6 +40,7 @@ pipelines = collections.OrderedDict()
 
 
 class Pipeline:
+    console.println("PRINT210+++++++++++++++++++++++++++")
     """
     Describes a whole execution pipeline. A pipeline can consist of one or more steps. Each pipeline should contain roughly of the following
     steps:
@@ -66,10 +67,12 @@ class Pipeline:
         pipelines[name] = self
 
     def __call__(self, cfg):
+        console.println("PRINT211+++++++++++++++++++++++++++")
         self.target(cfg)
 
 
 class Setup:
+    console.println("PRINT213+++++++++++++++++++++++++++")
     def __init__(self, cfg, sources=False, distribution=False, external=False, docker=False):
         self.cfg = cfg
         self.sources = sources
@@ -79,10 +82,12 @@ class Setup:
 
 
 class Success:
+    console.println("PRINT214+++++++++++++++++++++++++++")
     pass
 
 
 class BenchmarkActor(actor.BenchmarkActor):
+    console.println("PRINT215+++++++++++++++++++++++++++")
     def __init__(self):
         super().__init__()
         self.cfg = None
@@ -92,6 +97,7 @@ class BenchmarkActor(actor.BenchmarkActor):
         self.coordinator = None
 
     def receiveMsg_PoisonMessage(self, msg, sender):
+        console.println("PRINT216+++++++++++++++++++++++++++")
         self.logger.info("BenchmarkActor got notified of poison message [%s] (forwarding).", (str(msg)))
         if self.coordinator:
             self.coordinator.error = True
@@ -102,6 +108,7 @@ class BenchmarkActor(actor.BenchmarkActor):
 
     @actor.no_retry("test execution orchestrator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_Setup(self, msg, sender):
+        console.println("PRINT217+++++++++++++++++++++++++++")
         self.start_sender = sender
         self.cfg = msg.cfg
         self.coordinator = BenchmarkCoordinator(msg.cfg)
@@ -117,6 +124,7 @@ class BenchmarkActor(actor.BenchmarkActor):
 
     @actor.no_retry("test execution orchestrator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_EngineStarted(self, msg, sender):
+        console.println("PRINT218+++++++++++++++++++++++++++")
         self.logger.info("Builder has started engine successfully.")
         self.coordinator.test_execution.provision_config_revision = msg.provision_config_revision
         self.main_worker_coordinator = self.createActor(
@@ -128,12 +136,14 @@ class BenchmarkActor(actor.BenchmarkActor):
 
     @actor.no_retry("test execution orchestrator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_PreparationComplete(self, msg, sender):
+        console.println("PRINT219+++++++++++++++++++++++++++")
         self.coordinator.on_preparation_complete(msg.distribution_flavor, msg.distribution_version, msg.revision)
         self.logger.info("Telling worker_coordinator to start benchmark.")
         self.send(self.main_worker_coordinator, worker_coordinator.StartBenchmark())
 
     @actor.no_retry("test execution orchestrator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_TaskFinished(self, msg, sender):
+        console.println("PRINT210+++++++++++++++++++++++++++")
         self.coordinator.on_task_finished(msg.metrics)
         # We choose *NOT* to reset our own metrics store's timer as this one is only used to collect complete metrics records from
         # other stores (used by worker_coordinator and builder). Hence there is no need to reset the timer in our own metrics store.
@@ -141,6 +151,7 @@ class BenchmarkActor(actor.BenchmarkActor):
 
     @actor.no_retry("test execution orchestrator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_BenchmarkCancelled(self, msg, sender):
+        console.println("PRINT211+++++++++++++++++++++++++++")
         self.coordinator.cancelled = True
         # even notify the start sender if it is the originator. The reason is that we call #ask() which waits for a reply.
         # We also need to ask in order to avoid test_executions between this notification and the following ActorExitRequest.
@@ -148,12 +159,14 @@ class BenchmarkActor(actor.BenchmarkActor):
 
     @actor.no_retry("test execution orchestrator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_BenchmarkFailure(self, msg, sender):
+        console.println("PRINT212+++++++++++++++++++++++++++")
         self.logger.info("Received a benchmark failure from [%s] and will forward it now.", sender)
         self.coordinator.error = True
         self.send(self.start_sender, msg)
 
     @actor.no_retry("test execution orchestrator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_BenchmarkComplete(self, msg, sender):
+        console.println("PRINT213+++++++++++++++++++++++++++")
         self.coordinator.on_benchmark_complete(msg.metrics)
         self.send(self.main_worker_coordinator, thespian.actors.ActorExitRequest())
         self.main_worker_coordinator = None
@@ -162,11 +175,13 @@ class BenchmarkActor(actor.BenchmarkActor):
 
     @actor.no_retry("test execution orchestrator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_EngineStopped(self, msg, sender):
+        console.println("PRINT214+++++++++++++++++++++++++++")
         self.logger.info("Builder has stopped engine successfully.")
         self.send(self.start_sender, Success())
 
 
 class BenchmarkCoordinator:
+    console.println("PRINT215+++++++++++++++++++++++++++")
     def __init__(self, cfg):
         self.logger = logging.getLogger(__name__)
         self.cfg = cfg
@@ -180,6 +195,7 @@ class BenchmarkCoordinator:
         self.current_test_procedure = None
 
     def setup(self, sources=False):
+        console.println("PRINT216+++++++++++++++++++++++++++")
         # to load the workload we need to know the correct cluster distribution version. Usually, this value should be set
         # but there are rare cases (external pipeline and user did not specify the distribution version) where we need
         # to derive it ourselves. For source builds we always assume "master"
@@ -216,6 +232,7 @@ class BenchmarkCoordinator:
         self.test_execution_store = metrics.test_execution_store(self.cfg)
 
     def on_preparation_complete(self, distribution_flavor, distribution_version, revision):
+        console.println("PRINT217+++++++++++++++++++++++++++")
         self.test_execution.distribution_flavor = distribution_flavor
         self.test_execution.distribution_version = distribution_version
         self.test_execution.revision = revision
@@ -236,11 +253,13 @@ class BenchmarkCoordinator:
                              ))
 
     def on_task_finished(self, new_metrics):
+        console.println("PRINT218+++++++++++++++++++++++++++")
         self.logger.info("Task has finished.")
         self.logger.info("Bulk adding request metrics to metrics store.")
         self.metrics_store.bulk_add(new_metrics)
 
     def on_benchmark_complete(self, new_metrics):
+        console.println("PRINT219+++++++++++++++++++++++++++")
         self.logger.info("Benchmark is complete.")
         self.logger.info("Bulk adding request metrics to metrics store.")
         self.metrics_store.bulk_add(new_metrics)
@@ -257,6 +276,7 @@ class BenchmarkCoordinator:
 
 
 def execute_test(cfg, sources=False, distribution=False, external=False, docker=False):
+    console.println("PRINT220+++++++++++++++++++++++++++")
     logger = logging.getLogger(__name__)
     # at this point an actor system has to run and we should only join
     actor_system = actor.bootstrap_actor_system(try_join=True)
@@ -284,6 +304,7 @@ def execute_test(cfg, sources=False, distribution=False, external=False, docker=
 
 
 def set_default_hosts(cfg, host="127.0.0.1", port=9200):
+    console.println("PRINT221+++++++++++++++++++++++++++")
     logger = logging.getLogger(__name__)
     configured_hosts = cfg.opts("client", "hosts")
     if len(configured_hosts.default) != 0:
@@ -296,18 +317,21 @@ def set_default_hosts(cfg, host="127.0.0.1", port=9200):
 
 # Poor man's curry
 def from_sources(cfg):
+    console.println("PRINT222+++++++++++++++++++++++++++")
     port = cfg.opts("provisioning", "node.http.port")
     set_default_hosts(cfg, port=port)
     return execute_test(cfg, sources=True)
 
 
 def from_distribution(cfg):
+    console.println("PRINT223+++++++++++++++++++++++++++")
     port = cfg.opts("provisioning", "node.http.port")
     set_default_hosts(cfg, port=port)
     return execute_test(cfg, distribution=True)
 
 
 def benchmark_only(cfg):
+    console.println("PRINT224+++++++++++++++++++++++++++")
     set_default_hosts(cfg)
     # We'll use a special provision_config_instance name for external benchmarks.
     cfg.add(config.Scope.benchmark, "builder", "provision_config_instance.names", ["external"])
@@ -316,6 +340,7 @@ def benchmark_only(cfg):
 
 def docker(cfg):
     set_default_hosts(cfg)
+    console.println("PRINT225+++++++++++++++++++++++++++")
     return execute_test(cfg, docker=True)
 
 
@@ -334,6 +359,7 @@ Pipeline("docker",
 
 
 def available_pipelines():
+    console.println("PRINT226+++++++++++++++++++++++++++")
     return [[pipeline.name, pipeline.description] for pipeline in pipelines.values() if pipeline.stable]
 
 
@@ -343,6 +369,7 @@ def list_pipelines():
 
 
 def run(cfg):
+    console.println("PRINT227+++++++++++++++++++++++++++")
     logger = logging.getLogger(__name__)
     # pipeline is no more mandatory, will default to benchmark-only
     name = cfg.opts("test_execution", "pipeline", mandatory=False)

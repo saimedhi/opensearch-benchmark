@@ -37,6 +37,7 @@ from osbenchmark.utils import io, sysstats, console, opts, process
 from osbenchmark.utils.versions import components
 
 def list_telemetry():
+    console.println("PRINT97.6+++++++++++++++++++++++++++")
     console.println("Available telemetry devices:\n")
     devices = [[device.command, device.human_name, device.help] for device in [JitCompiler, Gc, FlightRecorder,
                                                                                Heapdump, NodeStats, RecoveryStats,
@@ -49,6 +50,7 @@ def list_telemetry():
 
 class Telemetry:
     def __init__(self, enabled_devices=None, devices=None):
+        console.println("PRINT97.7+++++++++++++++++++++++++++")
         if devices is None:
             devices = []
         if enabled_devices is None:
@@ -57,6 +59,7 @@ class Telemetry:
         self.devices = devices
 
     def instrument_candidate_java_opts(self):
+        console.println("PRINT97.8+++++++++++++++++++++++++++")
         opts = []
         for device in self.devices:
             if self._enabled(device):
@@ -66,36 +69,47 @@ class Telemetry:
         return opts
 
     def on_pre_node_start(self, node_name):
+        console.println("PRINT97.9+++++++++++++++++++++++++++")
         for device in self.devices:
             if self._enabled(device):
                 device.on_pre_node_start(node_name)
 
     def attach_to_node(self, node):
+        console.println("PRINT97.10+++++++++++++++++++++++++++")
         for device in self.devices:
             if self._enabled(device):
                 device.attach_to_node(node)
 
     def detach_from_node(self, node, running):
+        console.println("PRINT97.11+++++++++++++++++++++++++++")
         for device in self.devices:
             if self._enabled(device):
                 device.detach_from_node(node, running)
 
     def on_benchmark_start(self):
+        console.println("PRINT97.1+++++++++++++++++++++++++++")
+        console.println("self.devices", self.devices)
+        console.println("length of self.devices", len(self.devices))
         for device in self.devices:
+            console.println("device", device)
             if self._enabled(device):
+                console.println("device", device)
                 device.on_benchmark_start()
 
     def on_benchmark_stop(self):
         for device in self.devices:
+            console.println("PRINT97.2+++++++++++++++++++++++++++")
             if self._enabled(device):
                 device.on_benchmark_stop()
 
     def store_system_metrics(self, node, metrics_store):
+        console.println("PRINT97.12+++++++++++++++++++++++++++")
         for device in self.devices:
             if self._enabled(device):
                 device.store_system_metrics(node, metrics_store)
 
     def _enabled(self, device):
+        console.println("PRINT97.13+++++++++++++++++++++++++++")
         return device.internal or device.command in self.enabled_devices
 
 
@@ -106,55 +120,69 @@ class Telemetry:
 ########################################################################################
 
 class TelemetryDevice:
+    console.println("PRINT97.14+++++++++++++++++++++++++++")
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
     def instrument_java_opts(self):
+        console.println("PRINT97.15+++++++++++++++++++++++++++")
         return {}
 
     def on_pre_node_start(self, node_name):
+        console.println("PRINT97.16+++++++++++++++++++++++++++")
         pass
 
     def attach_to_node(self, node):
+        console.println("PRINT97.17+++++++++++++++++++++++++++")
         pass
 
     def detach_from_node(self, node, running):
+        console.println("PRINT97.18+++++++++++++++++++++++++++")
         pass
 
     def on_benchmark_start(self):
+        console.println("PRINT97.3+++++++++++++++++++++++++++")
         pass
 
     def on_benchmark_stop(self):
+        console.println("PRINT97.4+++++++++++++++++++++++++++")
         pass
 
     def store_system_metrics(self, node, metrics_store):
+        console.println("PRINT97.19+++++++++++++++++++++++++++")
         pass
 
     def __getstate__(self):
+        console.println("PRINT97.20+++++++++++++++++++++++++++")
         state = self.__dict__.copy()
         del state["logger"]
         return state
 
     def __setstate__(self, state):
+        console.println("PRINT97.21+++++++++++++++++++++++++++")
         self.__dict__.update(state)
         self.logger = logging.getLogger(__name__)
 
 
 class InternalTelemetryDevice(TelemetryDevice):
+    console.println("PRINT97.22+++++++++++++++++++++++++++")
     internal = True
 
 
 class SamplerThread(threading.Thread):
+    console.println("PRINT97.23+++++++++++++++++++++++++++")
     def __init__(self, recorder):
         threading.Thread.__init__(self)
         self.stop = False
         self.recorder = recorder
 
     def finish(self):
+        console.println("PRINT97.24+++++++++++++++++++++++++++")
         self.stop = True
         self.join()
 
     def run(self):
+        console.println("PRINT97.25+++++++++++++++++++++++++++")
         # noinspection PyBroadException
         try:
             while not self.stop:
@@ -165,6 +193,7 @@ class SamplerThread(threading.Thread):
 
 
 class FlightRecorder(TelemetryDevice):
+    console.println("PRINT97.26+++++++++++++++++++++++++++")
     internal = False
     command = "jfr"
     human_name = "Flight Recorder"
@@ -177,6 +206,7 @@ class FlightRecorder(TelemetryDevice):
         self.java_major_version = java_major_version
 
     def instrument_java_opts(self):
+        console.println("PRINT97.28+++++++++++++++++++++++++++")
         io.ensure_dir(self.log_root)
         log_file = os.path.join(self.log_root, "profile.jfr")
 
@@ -200,6 +230,7 @@ class FlightRecorder(TelemetryDevice):
         return java_opts
 
     def java_opts(self, log_file):
+        console.println("PRINT97.29+++++++++++++++++++++++++++")
         recording_template = self.telemetry_params.get("recording-template")
         java_opts = ["-XX:+UnlockDiagnosticVMOptions", "-XX:+DebugNonSafepoints"]
         jfr_cmd = ""
@@ -227,6 +258,7 @@ class FlightRecorder(TelemetryDevice):
 
 
 class JitCompiler(TelemetryDevice):
+    console.println("PRINT97.30+++++++++++++++++++++++++++")
     internal = False
     command = "jit"
     human_name = "JIT Compiler Profiler"
@@ -245,6 +277,7 @@ class JitCompiler(TelemetryDevice):
 
 
 class Gc(TelemetryDevice):
+    console.println("PRINT97.31+++++++++++++++++++++++++++")
     internal = False
     command = "gc"
     human_name = "GC log"
@@ -274,6 +307,7 @@ class Gc(TelemetryDevice):
 
 
 class Heapdump(TelemetryDevice):
+    console.println("PRINT97.32+++++++++++++++++++++++++++")
     internal = False
     command = "heapdump"
     human_name = "Heap Dump"
@@ -360,6 +394,7 @@ class CcrStats(TelemetryDevice):
         self.samplers = []
 
     def on_benchmark_start(self):
+        console.println("PRINT97.1b+++++++++++++++++++++++++++")
         recorder = []
         for cluster_name in self.specified_cluster_names:
             recorder = CcrStatsRecorder(cluster_name, self.clients[cluster_name], self.metrics_store, self.sample_interval,
@@ -538,6 +573,7 @@ class RecoveryStats(TelemetryDevice):
         self.samplers = []
 
     def on_benchmark_start(self):
+        console.println("PRINT97.1c+++++++++++++++++++++++++++")
         for cluster_name in self.specified_cluster_names:
             recorder = RecoveryStatsRecorder(cluster_name, self.clients[cluster_name], self.metrics_store,
                                              self.sample_interval,
@@ -626,6 +662,7 @@ class NodeStats(TelemetryDevice):
         self.samplers = []
 
     def on_benchmark_start(self):
+        console.println("PRINT97.1d+++++++++++++++++++++++++++")
         default_client = self.clients["default"]
         # ElasticSearch does not supply a value for the distribution field
         distribution_name = default_client.info()["version"].get("distribution", "")
@@ -830,6 +867,7 @@ class TransformStats(TelemetryDevice):
         self.samplers = []
 
     def on_benchmark_start(self):
+        console.println("PRINT97.1e+++++++++++++++++++++++++++")
         for cluster_name in self.specified_cluster_names:
             recorder = TransformStatsRecorder(cluster_name, self.clients[cluster_name], self.metrics_store,
                                               self.sample_interval,
@@ -850,6 +888,7 @@ class TransformStats(TelemetryDevice):
 
 
 class TransformStatsRecorder:
+    console.println("PRINT97.35+++++++++++++++++++++++++++")
     """
     Collects and pushes Transform stats for the specified cluster to the metric store.
     """
@@ -969,6 +1008,7 @@ class TransformStatsRecorder:
 
 
 class SearchableSnapshotsStats(TelemetryDevice):
+    console.println("PRINT97.36+++++++++++++++++++++++++++")
     internal = False
     command = "searchable-snapshots-stats"
     human_name = "Searchable Snapshots Stats"
@@ -1042,6 +1082,7 @@ class SearchableSnapshotsStats(TelemetryDevice):
         self.samplers = []
 
     def on_benchmark_start(self):
+        console.println("PRINT97.1f+++++++++++++++++++++++++++")
         for cluster_name in self.specified_cluster_names:
             recorder = SearchableSnapshotsStatsRecorder(
                 cluster_name, self.clients[cluster_name], self.metrics_store, self.sample_interval,
@@ -1059,6 +1100,7 @@ class SearchableSnapshotsStats(TelemetryDevice):
 
 
 class SearchableSnapshotsStatsRecorder:
+    console.println("PRINT97.40+++++++++++++++++++++++++++")
     """
     Collects and pushes searchable snapshots stats for the specified cluster to the metric store.
     """
@@ -1151,6 +1193,7 @@ class SearchableSnapshotsStatsRecorder:
         return False
 
 class StartupTime(InternalTelemetryDevice):
+    console.println("PRINT97.41+++++++++++++++++++++++++++")
     def __init__(self, stopwatch=time.StopWatch):
         super().__init__()
         self.timer = stopwatch()
@@ -1166,6 +1209,7 @@ class StartupTime(InternalTelemetryDevice):
 
 
 class DiskIo(InternalTelemetryDevice):
+    console.println("PRINT97.42+++++++++++++++++++++++++++")
     """
     Gathers disk I/O stats.
     """
@@ -1286,6 +1330,7 @@ class ClusterEnvironmentInfo(InternalTelemetryDevice):
         self.client = client
 
     def on_benchmark_start(self):
+        console.println("PRINT97.1g+++++++++++++++++++++++++++")
         # noinspection PyBroadException
         try:
             client_info = self.client.info()
@@ -1338,6 +1383,7 @@ class ExternalEnvironmentInfo(InternalTelemetryDevice):
 
     # noinspection PyBroadException
     def on_benchmark_start(self):
+        console.println("PRINT97.1h+++++++++++++++++++++++++++")
         try:
             nodes_stats = self.client.nodes.stats(metric="_all")["nodes"].values()
         except BaseException:
@@ -1381,6 +1427,7 @@ class JvmStatsSummary(InternalTelemetryDevice):
         self.jvm_stats_per_node = {}
 
     def on_benchmark_start(self):
+        console.println("PRINT97.1i+++++++++++++++++++++++++++")
         self.logger.info("JvmStatsSummary on benchmark start")
         self.jvm_stats_per_node = self.jvm_stats()
 
@@ -1464,6 +1511,7 @@ class IndexStats(InternalTelemetryDevice):
     """
     Gathers statistics via the OpenSearch index stats API
     """
+    console.println("PRINT97.2j+++++++++++++++++++++++++++")
     def __init__(self, client, metrics_store):
         super().__init__()
         self.client = client
@@ -1471,6 +1519,7 @@ class IndexStats(InternalTelemetryDevice):
         self.first_time = True
 
     def on_benchmark_start(self):
+        console.println("PRINT97.1j+++++++++++++++++++++++++++")
         # we only determine this value at the start of the benchmark. This is actually only useful for
         # the pipeline "benchmark-only" where we don't have control over the cluster and the user might not have restarted
         # the cluster so we can at least tell them.
@@ -1484,6 +1533,7 @@ class IndexStats(InternalTelemetryDevice):
             self.first_time = False
 
     def on_benchmark_stop(self):
+        console.println("PRINT97.3j+++++++++++++++++++++++++++")
         self.logger.info("Gathering indices stats for all primaries on benchmark stop.")
         index_stats = self.index_stats()
         # import json
@@ -1511,6 +1561,7 @@ class IndexStats(InternalTelemetryDevice):
         self.add_metrics(self.extract_value(index_stats, ["_all", "total", "translog", "size_in_bytes"]), "translog_size_in_bytes", "byte")
 
     def index_stats(self):
+        console.println("PRINT97.4j+++++++++++++++++++++++++++")
         # noinspection PyBroadException
         try:
             return self.client.indices.stats(metric="_all", level="shards")
@@ -1519,6 +1570,7 @@ class IndexStats(InternalTelemetryDevice):
             return {}
 
     def index_times(self, stats, per_shard_stats=True):
+        console.println("PRINT97.5j+++++++++++++++++++++++++++")
         times = []
         self.index_time(times, stats, "merges_total_time", ["merges", "total_time_in_millis"], per_shard_stats)
         self.index_time(times, stats, "merges_total_throttled_time", ["merges", "total_throttled_time_in_millis"], per_shard_stats)
@@ -1529,6 +1581,7 @@ class IndexStats(InternalTelemetryDevice):
         return times
 
     def index_time(self, values, stats, name, path, per_shard_stats):
+        console.println("PRINT97.6j+++++++++++++++++++++++++++")
         primary_total_stats = self.extract_value(stats, ["_all", "primaries"], default_value={})
         value = self.extract_value(primary_total_stats, path)
         if value is not None:
@@ -1542,6 +1595,7 @@ class IndexStats(InternalTelemetryDevice):
             values.append(doc)
 
     def index_counts(self, stats):
+        console.println("PRINT97.7j+++++++++++++++++++++++++++")
         counts = []
         self.index_count(counts, stats, "merges_total_count", ["merges", "total"])
         self.index_count(counts, stats, "refresh_total_count", ["refresh", "total"])
@@ -1549,6 +1603,7 @@ class IndexStats(InternalTelemetryDevice):
         return counts
 
     def index_count(self, values, stats, name, path):
+        console.println("PRINT97.8j+++++++++++++++++++++++++++")
         primary_total_stats = self.extract_value(stats, ["_all", "primaries"], default_value={})
         value = self.extract_value(primary_total_stats, path)
         if value is not None:
@@ -1559,6 +1614,7 @@ class IndexStats(InternalTelemetryDevice):
             values.append(doc)
 
     def primary_shard_stats(self, stats, path):
+        console.println("PRINT97.9j+++++++++++++++++++++++++++")
         shard_stats = []
         try:
             for shards in stats["indices"].values():
@@ -1571,6 +1627,7 @@ class IndexStats(InternalTelemetryDevice):
         return shard_stats
 
     def add_metrics(self, value, metric_key, unit=None):
+        console.println("PRINT97.10j+++++++++++++++++++++++++++")
         if value is not None:
             if unit:
                 self.metrics_store.put_value_cluster_level(metric_key, value, unit)
@@ -1578,6 +1635,7 @@ class IndexStats(InternalTelemetryDevice):
                 self.metrics_store.put_value_cluster_level(metric_key, value)
 
     def extract_value(self, primaries, path, default_value=None):
+        console.println("PRINT97.11j+++++++++++++++++++++++++++")
         value = primaries
         try:
             for k in path:
@@ -1589,12 +1647,14 @@ class IndexStats(InternalTelemetryDevice):
 
 
 class MlBucketProcessingTime(InternalTelemetryDevice):
+    console.println("PRINT97.12j+++++++++++++++++++++++++++")
     def __init__(self, client, metrics_store):
         super().__init__()
         self.client = client
         self.metrics_store = metrics_store
 
     def on_benchmark_stop(self):
+        console.println("PRINT97.13j+++++++++++++++++++++++++++")
         try:
             results = self.client.search(index=".ml-anomalies-*", body={
                 "size": 0,
@@ -1647,6 +1707,7 @@ class MlBucketProcessingTime(InternalTelemetryDevice):
 
 
 class IndexSize(InternalTelemetryDevice):
+    console.println("PRINT97.14j+++++++++++++++++++++++++++")
     """
     Measures the final size of the index
     """
@@ -1657,9 +1718,11 @@ class IndexSize(InternalTelemetryDevice):
         self.index_size_bytes = None
 
     def attach_to_node(self, node):
+        console.println("PRINT97.15j+++++++++++++++++++++++++++")
         self.attached = True
 
     def detach_from_node(self, node, running):
+        console.println("PRINT97.16j+++++++++++++++++++++++++++")
         # we need to gather the file size after the node has terminated so we can be sure that it has written all its buffers.
         if not running and self.attached and self.data_paths:
             self.attached = False
@@ -1669,10 +1732,12 @@ class IndexSize(InternalTelemetryDevice):
             self.index_size_bytes = index_size_bytes
 
     def store_system_metrics(self, node, metrics_store):
+        console.println("PRINT97.17j+++++++++++++++++++++++++++")
         if self.index_size_bytes:
             metrics_store.put_value_node_level(node.node_name, "final_index_size_bytes", self.index_size_bytes, "byte")
 
 class SegmentReplicationStats(TelemetryDevice):
+    console.println("PRINT97.18j+++++++++++++++++++++++++++")
     internal = False
     command = "segment-replication-stats"
     human_name = "Segment Replication Stats"
@@ -1738,6 +1803,7 @@ class SegmentReplicationStats(TelemetryDevice):
         self.samplers = []
 
     def on_benchmark_start(self):
+        console.println("PRINT97.1a+++++++++++++++++++++++++++")
         for cluster_name in self.specified_cluster_names:
             recorder = SegmentReplicationStatsRecorder(
                 cluster_name, self.clients[cluster_name], self.metrics_store, self.sample_interval,
@@ -1754,6 +1820,7 @@ class SegmentReplicationStats(TelemetryDevice):
                 sampler.finish()
 
 class SegmentReplicationStatsRecorder:
+    console.println("PRINT97.19j+++++++++++++++++++++++++++")
     """
     Collects and pushes segment replication stats for the specified cluster to the metric store.
     """

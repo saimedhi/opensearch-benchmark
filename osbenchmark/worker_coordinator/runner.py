@@ -38,6 +38,7 @@ from functools import total_ordering
 from os.path import commonprefix
 from typing import List, Optional
 from io import BytesIO
+from osbenchmark.utils import console
 
 import ijson
 
@@ -2056,6 +2057,7 @@ class RequestTiming(Runner, Delegator):
                 "request_end": end,
                 "service_time": end - start
             }
+            console.println("imp 1 * result", result)
         return result
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):

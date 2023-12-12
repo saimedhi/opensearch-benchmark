@@ -47,14 +47,16 @@ class OsClient:
     """
     Provides a stripped-down client interface that is easier to exchange for testing
     """
-
+    console.println("PRINT207+++++++++++++++++++++++++++")
     def __init__(self, client, cluster_version=None):
+        console.println("PRINT20+++++++++++++++++++++++++++")
         self._client = client
         self.logger = logging.getLogger(__name__)
         self._cluster_version = cluster_version
         self._cluster_distribution = None
 
     def probe_version(self):
+        console.println("PRINT21+++++++++++++++++++++++++++")
         info = self.guarded(self._client.info)
         try:
             self._cluster_version = versions.components(info["version"]["number"])
@@ -71,6 +73,7 @@ class OsClient:
             self._cluster_distribution = "elasticsearch"
 
     def put_template(self, name, template):
+        console.println("PRINT23+++++++++++++++++++++++++++")
         return self.guarded(self._client.indices.put_template, name=name, body=template)
 
     def template_exists(self, name):
@@ -173,6 +176,7 @@ class OsClient:
 
 
 class OsClientFactory:
+    console.println("PRINT230+++++++++++++++++++++++++++")
     """
     Abstracts how the OpenSearch client is created. Intended for testing.
     """
@@ -188,7 +192,6 @@ class OsClientFactory:
                                                       default_value=None, mandatory=False)
         metrics_aws_access_key_id = None
         metrics_aws_secret_access_key = None
-        metrics_aws_session_token = None
         metrics_aws_region = None
         metrics_aws_service = None
 
@@ -274,6 +277,7 @@ class OsClientFactory:
         self._client = factory.create()
 
     def create(self):
+        console.println("PRINT231+++++++++++++++++++++++++++")
         c = OsClient(self._client)
         if self.probe_version:
             c.probe_version()
@@ -284,7 +288,7 @@ class IndexTemplateProvider:
     """
     Abstracts how the Benchmark index template is retrieved. Intended for testing.
     """
-
+    console.println("PRINT232+++++++++++++++++++++++++++")
     def __init__(self, cfg):
         self._config = cfg
         self.script_dir = self._config.opts("node", "benchmark.root")
@@ -293,15 +297,19 @@ class IndexTemplateProvider:
                                                      default_value=None, mandatory=False)
 
     def metrics_template(self):
+        console.println("PRINT233+++++++++++++++++++++++++++")
         return self._read("metrics-template")
 
     def test_executions_template(self):
+        console.println("PRINT234+++++++++++++++++++++++++++")
         return self._read("test-executions-template")
 
     def results_template(self):
+        console.println("PRINT235+++++++++++++++++++++++++++")
         return self._read("results-template")
 
     def _read(self, template_name):
+        console.println("PRINT236+++++++++++++++++++++++++++")
         with open("%s/resources/%s.json" % (self.script_dir, template_name), encoding="utf-8") as f:
             template = json.load(f)
             if self._number_of_shards is not None:
@@ -317,6 +325,7 @@ class IndexTemplateProvider:
 
 
 class MetaInfoScope(Enum):
+    console.println("PRINT237+++++++++++++++++++++++++++")
     """
     Defines the scope of a meta-information. Meta-information provides more context for a metric, for example the concrete version
     of OpenSearch that has been benchmarked or environment information like CPU model or OS.
@@ -332,16 +341,19 @@ class MetaInfoScope(Enum):
 
 
 def calculate_results(store, test_execution):
+    console.println("PRINT238+++++++++++++++++++++++++++")
     calc = GlobalStatsCalculator(store, test_execution.workload, test_execution.test_procedure)
     return calc()
 
 
 def calculate_system_results(store, node_name):
+    console.println("PRINT239+++++++++++++++++++++++++++")
     calc = SystemStatsCalculator(store, node_name)
     return calc()
 
 
 def metrics_store(cfg, read_only=True, workload=None, test_procedure=None, provision_config_instance=None, meta_info=None):
+    console.println("PRINT240+++++++++++++++++++++++++++")
     """
     Creates a proper metrics store based on the current configuration.
 
@@ -366,6 +378,7 @@ def metrics_store(cfg, read_only=True, workload=None, test_procedure=None, provi
 
 
 def metrics_store_class(cfg):
+    console.println("PRINT241+++++++++++++++++++++++++++")
     if cfg.opts("results_publishing", "datastore.type") == "opensearch":
         return OsMetricsStore
     else:
@@ -373,6 +386,7 @@ def metrics_store_class(cfg):
 
 
 def extract_user_tags_from_config(cfg):
+    console.println("PRINT242+++++++++++++++++++++++++++")
     """
     Extracts user tags into a structured dict
 
@@ -384,6 +398,7 @@ def extract_user_tags_from_config(cfg):
 
 
 def extract_user_tags_from_string(user_tags):
+    console.println("PRINT243+++++++++++++++++++++++++++")
     """
     Extracts user tags into a structured dict
 
@@ -409,10 +424,12 @@ class SampleType(IntEnum):
 
 
 class MetricsStore:
+    console.println("PRINT245+++++++++++++++++++++++++++")
     """
     Abstract metrics store
     """
-
+    console.println("PRINT180+++++++++++++++++++++++++++")
+    
     def __init__(self, cfg, clock=time.Clock, meta_info=None):
         """
         Creates a new metrics store.
@@ -447,6 +464,7 @@ class MetricsStore:
     def open(self, test_ex_id=None, test_ex_timestamp=None, workload_name=None,\
          test_procedure_name=None, provision_config_instance_name=None, ctx=None,\
          create=False):
+        console.println("PRINT181+++++++++++++++++++++++++++")
         """
         Opens a metrics store for a specific test_execution, workload, test_procedure and provision_config_instance.
 
@@ -492,18 +510,21 @@ class MetricsStore:
         self.opened = True
 
     def reset_relative_time(self):
+        console.println("PRINT182+++++++++++++++++++++++++++")
         """
         Resets the internal relative-time counter to zero.
         """
         self._stop_watch.start()
 
     def flush(self, refresh=True):
+        console.println("PRINT183+++++++++++++++++++++++++++")
         """
         Explicitly flushes buffered metrics to the metric store. It is not required to flush before closing the metrics store.
         """
         raise NotImplementedError("abstract method")
 
     def close(self):
+        console.println("PRINT184+++++++++++++++++++++++++++")
         """
         Closes the metric store. Note that it is mandatory to close the metrics store when it is no longer needed as it only persists
         metrics on close (in order to avoid additional latency during the benchmark).
@@ -514,6 +535,7 @@ class MetricsStore:
         self.opened = False
 
     def add_meta_info(self, scope, scope_key, key, value):
+        console.println("PRINT185+++++++++++++++++++++++++++")
         """
         Adds new meta information to the metrics store. All metrics entries that are created after calling this method are guaranteed to
         contain the added meta info (provided is on the same level or a level below, e.g. a cluster level metric will not contain node
@@ -544,6 +566,7 @@ class MetricsStore:
 
     @property
     def open_context(self):
+        console.println("PRINT246+++++++++++++++++++++++++++")
         return {
             "test-execution-id": self._test_execution_id,
             "test-execution-timestamp": self._test_execution_timestamp,
@@ -554,6 +577,7 @@ class MetricsStore:
 
     def put_value_cluster_level(self, name, value, unit=None, task=None, operation=None, operation_type=None, sample_type=SampleType.Normal,
                                 absolute_time=None, relative_time=None, meta_data=None):
+        console.println("PRINT247+++++++++++++++++++++++++++")
         """
         Adds a new cluster level value metric.
 
@@ -575,6 +599,7 @@ class MetricsStore:
 
     def put_value_node_level(self, node_name, name, value, unit=None, task=None, operation=None, operation_type=None,
                              sample_type=SampleType.Normal, absolute_time=None, relative_time=None, meta_data=None):
+        console.println("PRINT248+++++++++++++++++++++++++++")
         """
         Adds a new node level value metric.
 
@@ -597,6 +622,7 @@ class MetricsStore:
 
     def _put_metric(self, level, level_key, name, value, unit, task, operation, operation_type, sample_type, absolute_time=None,
                     relative_time=None, meta_data=None):
+        console.println("PRINT249+++++++++++++++++++++++++++")
         if level == MetaInfoScope.cluster:
             meta = self._meta_info[MetaInfoScope.cluster].copy()
         elif level == MetaInfoScope.node:
@@ -639,6 +665,7 @@ class MetricsStore:
         self._add(doc)
 
     def put_doc(self, doc, level=None, node_name=None, meta_data=None, absolute_time=None, relative_time=None):
+        console.println("PRINT250+++++++++++++++++++++++++++")
         """
         Adds a new document to the metrics store. It will merge additional properties into the doc such as timestamps or workload info.
 
@@ -689,6 +716,7 @@ class MetricsStore:
         self._add(doc)
 
     def bulk_add(self, memento):
+        console.println("PRINT251+++++++++++++++++++++++++++")
         """
         Adds raw metrics store documents previously created with #to_externalizable()
 
@@ -700,6 +728,7 @@ class MetricsStore:
                 self._add(doc)
 
     def to_externalizable(self, clear=False):
+        console.println("PRINT252+++++++++++++++++++++++++++")
         raise NotImplementedError("abstract method")
 
     def _add(self, doc):
@@ -712,6 +741,7 @@ class MetricsStore:
 
     def get_one(self, name, sample_type=None, node_name=None, task=None, mapper=lambda doc: doc["value"],
                 sort_key=None, sort_reverse=False):
+        console.println("PRINT253+++++++++++++++++++++++++++")
         """
         Gets one value for the given metric name (even if there should be more than one).
 
@@ -727,9 +757,11 @@ class MetricsStore:
 
     @staticmethod
     def _first_or_none(values):
+        console.println("PRINT254+++++++++++++++++++++++++++")
         return values[0] if values else None
 
     def get(self, name, task=None, operation_type=None, sample_type=None, node_name=None):
+        console.println("PRINT255+++++++++++++++++++++++++++")
         """
         Gets all raw values for the given metric name.
 
@@ -743,6 +775,7 @@ class MetricsStore:
         return self._get(name, task, operation_type, sample_type, node_name, lambda doc: doc["value"])
 
     def get_raw(self, name, task=None, operation_type=None, sample_type=None, node_name=None, mapper=lambda doc: doc):
+        console.println("PRINT256+++++++++++++++++++++++++++")
         """
         Gets all raw records for the given metric name.
 
@@ -757,6 +790,7 @@ class MetricsStore:
         return self._get(name, task, operation_type, sample_type, node_name, mapper)
 
     def get_unit(self, name, task=None, operation_type=None, node_name=None):
+        console.println("PRINT257+++++++++++++++++++++++++++")
         """
         Gets the unit for the given metric name.
 
@@ -770,9 +804,11 @@ class MetricsStore:
         return self._first_or_none(self._get(name, task, operation_type, None, node_name, lambda doc: doc["unit"]))
 
     def _get(self, name, task, operation_type, sample_type, node_name, mapper):
+        console.println("PRINT258+++++++++++++++++++++++++++")
         raise NotImplementedError("abstract method")
 
     def get_error_rate(self, task, operation_type=None, sample_type=None):
+        console.println("PRINT259+++++++++++++++++++++++++++")
         """
         Gets the error rate for a specific task.
 
@@ -784,6 +820,7 @@ class MetricsStore:
         raise NotImplementedError("abstract method")
 
     def get_stats(self, name, task=None, operation_type=None, sample_type=None):
+        console.println("PRINT260+++++++++++++++++++++++++++")
         """
         Gets standard statistics for the given metric.
 
@@ -796,6 +833,7 @@ class MetricsStore:
         raise NotImplementedError("abstract method")
 
     def get_percentiles(self, name, task=None, operation_type=None, sample_type=None, percentiles=None):
+        console.println("PRINT261+++++++++++++++++++++++++++")
         """
         Retrieves percentile metrics for the given metric.
 
@@ -812,6 +850,7 @@ class MetricsStore:
         raise NotImplementedError("abstract method")
 
     def get_median(self, name, task=None, operation_type=None, sample_type=None):
+        console.println("PRINT262+++++++++++++++++++++++++++")
         """
         Retrieves median value of the given metric.
 
@@ -826,6 +865,7 @@ class MetricsStore:
         return percentiles[median] if percentiles else None
 
     def get_mean(self, name, task=None, operation_type=None, sample_type=None):
+        console.println("PRINT263+++++++++++++++++++++++++++")
         """
         Retrieves mean of the given metric.
 
@@ -840,6 +880,7 @@ class MetricsStore:
 
 
 class OsMetricsStore(MetricsStore):
+    console.println("PRINT264+++++++++++++++++++++++++++")
     """
     A metrics store backed by OpenSearch.
     """
@@ -868,6 +909,7 @@ class OsMetricsStore(MetricsStore):
     def open(self, test_ex_id=None, test_ex_timestamp=None, workload_name=None, \
         test_procedure_name=None, provision_config_instance_name=None, ctx=None, \
         create=False):
+        console.println("PRINT265+++++++++++++++++++++++++++")
         self._docs = []
         MetricsStore.open(
             self, test_ex_id, test_ex_timestamp,
@@ -892,6 +934,7 @@ class OsMetricsStore(MetricsStore):
         self._client.refresh(index=self._index)
 
     def index_name(self):
+        console.println("PRINT266+++++++++++++++++++++++++++")
         ts = time.from_is8601(self._test_execution_timestamp)
         return "benchmark-metrics-%04d-%02d" % (ts.year, ts.month)
 
@@ -902,6 +945,7 @@ class OsMetricsStore(MetricsStore):
         return self._index_template_provider.metrics_template()
 
     def flush(self, refresh=True):
+        console.println("PRINT267+++++++++++++++++++++++++++")
         if self._docs:
             sw = time.StopWatch()
             sw.start()
@@ -930,6 +974,7 @@ class OsMetricsStore(MetricsStore):
 
     def get_one(self, name, sample_type=None, node_name=None, task=None, mapper=lambda doc: doc["value"],
                 sort_key=None, sort_reverse=False):
+        console.println("PRINT268+++++++++++++++++++++++++++")
         order = "desc" if sort_reverse else "asc"
         query = {
             "query": self._query_by_name(name, task, None, sample_type, node_name),
@@ -950,6 +995,7 @@ class OsMetricsStore(MetricsStore):
             return None
 
     def get_error_rate(self, task, operation_type=None, sample_type=None):
+        console.println("PRINT269+++++++++++++++++++++++++++")
         query = {
             "query": self._query_by_name("service_time", task, operation_type, sample_type, None),
             "size": 0,
@@ -986,6 +1032,7 @@ class OsMetricsStore(MetricsStore):
             return count_errors / (count_errors + count_success)
 
     def get_stats(self, name, task=None, operation_type=None, sample_type=None):
+        console.println("PRINT270+++++++++++++++++++++++++++")
         """
         Gets standard statistics for the given metric name.
 
@@ -1007,6 +1054,7 @@ class OsMetricsStore(MetricsStore):
         return result["aggregations"]["metric_stats"]
 
     def get_percentiles(self, name, task=None, operation_type=None, sample_type=None, percentiles=None):
+        console.println("PRINT271+++++++++++++++++++++++++++")
         if percentiles is None:
             percentiles = [99, 99.9, 100]
         query = {
@@ -1035,6 +1083,7 @@ class OsMetricsStore(MetricsStore):
             return None
 
     def _query_by_name(self, name, task, operation_type, sample_type, node_name):
+        console.println("PRINT272+++++++++++++++++++++++++++")
         q = {
             "bool": {
                 "filter": [
@@ -1086,6 +1135,7 @@ class OsMetricsStore(MetricsStore):
 
 
 class InMemoryMetricsStore(MetricsStore):
+    console.println("PRINT273+++++++++++++++++++++++++++")
     def __init__(self, cfg, clock=time.Clock, meta_info=None):
         """
 
@@ -1108,9 +1158,11 @@ class InMemoryMetricsStore(MetricsStore):
         self.docs.append(doc)
 
     def flush(self, refresh=True):
+        console.println("PRINT274+++++++++++++++++++++++++++")
         pass
 
     def to_externalizable(self, clear=False):
+        console.println("PRINT275+++++++++++++++++++++++++++")
         docs = self.docs
         if clear:
             self.docs = []
@@ -1120,6 +1172,7 @@ class InMemoryMetricsStore(MetricsStore):
         return compressed
 
     def get_percentiles(self, name, task=None, operation_type=None, sample_type=None, percentiles=None):
+        console.println("PRINT276+++++++++++++++++++++++++++")
         if percentiles is None:
             percentiles = [99, 99.9, 100]
         result = collections.OrderedDict()
@@ -1132,6 +1185,7 @@ class InMemoryMetricsStore(MetricsStore):
 
     @staticmethod
     def percentile_value(sorted_values, percentile):
+        console.println("PRINT277+++++++++++++++++++++++++++")
         """
         Calculates a percentile value for a given list of values and a percentile.
 
@@ -1153,6 +1207,7 @@ class InMemoryMetricsStore(MetricsStore):
             return lower_score + (higher_score - lower_score) * fr
 
     def get_error_rate(self, task, operation_type=None, sample_type=None):
+        console.println("PRINT278+++++++++++++++++++++++++++")
         error = 0
         total_count = 0
         for doc in self.docs:
@@ -1169,8 +1224,10 @@ class InMemoryMetricsStore(MetricsStore):
             return 0.0
 
     def get_stats(self, name, task=None, operation_type=None, sample_type=SampleType.Normal):
+        console.println("PRINT279+++++++++++++++++++++++++++")
         values = self.get(name, task, operation_type, sample_type)
         sorted_values = sorted(values)
+        console.println("sorted_values", sorted_values)
         if len(sorted_values) > 0:
             return {
                 "count": len(sorted_values),
@@ -1183,6 +1240,7 @@ class InMemoryMetricsStore(MetricsStore):
             return None
 
     def _get(self, name, task, operation_type, sample_type, node_name, mapper):
+        console.println("PRINT280+++++++++++++++++++++++++++")
         return [mapper(doc)
                 for doc in self.docs
                 if doc["name"] == name and
@@ -1194,6 +1252,7 @@ class InMemoryMetricsStore(MetricsStore):
 
     def get_one(self, name, sample_type=None, node_name=None, task=None, mapper=lambda doc: doc["value"],
                 sort_key=None, sort_reverse=False):
+        console.println("PRINT281+++++++++++++++++++++++++++")
         if sort_key:
             docs = sorted(self.docs, key=lambda k: k[sort_key], reverse=sort_reverse)
         else:
@@ -1210,6 +1269,7 @@ class InMemoryMetricsStore(MetricsStore):
 
 
 def test_execution_store(cfg):
+    console.println("PRINT190+++++++++++++++++++++++++++")
     """
     Creates a proper test_execution store based on the current configuration.
     :param cfg: Config object. Mandatory.
@@ -1225,6 +1285,7 @@ def test_execution_store(cfg):
 
 
 def results_store(cfg):
+    console.println("PRINT191+++++++++++++++++++++++++++")
     """
     Creates a proper test_execution store based on the current configuration.
     :param cfg: Config object. Mandatory.
@@ -1240,6 +1301,7 @@ def results_store(cfg):
 
 
 def list_test_executions(cfg):
+    console.println("PRINT192+++++++++++++++++++++++++++")
     def format_dict(d):
         if d:
             items = sorted(d.items())
@@ -1281,6 +1343,7 @@ def list_test_executions(cfg):
 
 
 def create_test_execution(cfg, workload, test_procedure, workload_revision=None):
+    console.println("PRINT193+++++++++++++++++++++++++++")
     provision_config_instance = cfg.opts("builder", "provision_config_instance.names")
     environment = cfg.opts("system", "env.name")
     test_execution_id = cfg.opts("system", "test_execution.id")
@@ -1391,6 +1454,7 @@ class TestExecution:
         return d
 
     def to_result_dicts(self):
+        console.println("PRINT194+++++++++++++++++++++++++++")
         """
         :return: a list of dicts, suitable for persisting the results of this test execution in a format that is Kibana-friendly.
         """
@@ -1435,6 +1499,7 @@ class TestExecution:
 
     @classmethod
     def from_dict(cls, d):
+        console.println("PRINT195+++++++++++++++++++++++++++")
         user_tags = d.get("user-tags", {})
         # TODO: cluster is optional for BWC. This can be removed after some grace period.
         cluster = d.get("cluster", {})
@@ -1451,6 +1516,7 @@ class TestExecution:
 
 
 class TestExecutionStore:
+    console.println("PRINT282+++++++++++++++++++++++++++")
     def __init__(self, cfg):
         self.cfg = cfg
         self.environment_name = cfg.opts("system", "env.name")
@@ -1462,6 +1528,7 @@ class TestExecutionStore:
         raise NotImplementedError("abstract method")
 
     def store_test_execution(self, test_execution):
+        console.println("PRINT283+++++++++++++++++++++++++++")
         raise NotImplementedError("abstract method")
 
     def _max_results(self):
@@ -1470,6 +1537,7 @@ class TestExecutionStore:
 
 # Does not inherit from TestExecutionStore as it is only a delegator with the same API.
 class CompositeTestExecutionStore:
+    console.println("PRINT196+++++++++++++++++++++++++++")
     """
     Internal helper class to store test executions as file and to OpenSearch in case users
     want OpenSearch as a test executions store.
@@ -1493,7 +1561,9 @@ class CompositeTestExecutionStore:
 
 
 class FileTestExecutionStore(TestExecutionStore):
+    console.println("PRINT197+++++++++++++++++++++++++++")
     def store_test_execution(self, test_execution):
+        console.println("PRINT198+++++++++++++++++++++++++++")
         doc = test_execution.as_dict()
         test_execution_path = paths.test_execution_root(self.cfg, test_execution_id=test_execution.test_execution_id)
         io.ensure_dir(test_execution_path)
@@ -1501,14 +1571,17 @@ class FileTestExecutionStore(TestExecutionStore):
             f.write(json.dumps(doc, indent=True, ensure_ascii=False))
 
     def _test_execution_file(self, test_execution_id=None):
+        console.println("PRINT199+++++++++++++++++++++++++++")
         return os.path.join(paths.test_execution_root(cfg=self.cfg, test_execution_id=test_execution_id), "test_execution.json")
 
     def list(self):
+        console.println("PRINT200+++++++++++++++++++++++++++")
         results = glob.glob(self._test_execution_file(test_execution_id="*"))
         all_test_executions = self._to_test_executions(results)
         return all_test_executions[:self._max_results()]
 
     def find_by_test_execution_id(self, test_execution_id):
+        console.println("PRINT201+++++++++++++++++++++++++++")
         test_execution_file = self._test_execution_file(test_execution_id=test_execution_id)
         if io.exists(test_execution_file):
             test_executions = self._to_test_executions([test_execution_file])
@@ -1517,6 +1590,7 @@ class FileTestExecutionStore(TestExecutionStore):
         raise exceptions.NotFound("No test execution with test execution id [{}]".format(test_execution_id))
 
     def _to_test_executions(self, results):
+        console.println("PRINT202+++++++++++++++++++++++++++")
         test_executions = []
         for result in results:
             # noinspection PyBroadException
@@ -1529,6 +1603,7 @@ class FileTestExecutionStore(TestExecutionStore):
 
 
 class EsTestExecutionStore(TestExecutionStore):
+    console.println("PRINT203+++++++++++++++++++++++++++")
     INDEX_PREFIX = "benchmark-test-executions-"
     TEST_EXECUTION_DOC_TYPE = "_doc"
 
@@ -1655,17 +1730,20 @@ class NoopResultsStore:
     """
     Does not store any results separately as these are stored as part of the test_execution on the file system.
     """
+    console.println("PRINT290+++++++++++++++++++++++++++")
     def store_results(self, test_execution):
         pass
 
 
 # helper function for encoding and decoding float keys so that the OpenSearch metrics store can save them.
 def encode_float_key(k):
+    console.println("PRINT291+++++++++++++++++++++++++++")
     # ensure that the key is indeed a float to unify the representation (e.g. 50 should be represented as "50_0")
     return str(float(k)).replace(".", "_")
 
 
 def percentiles_for_sample_size(sample_size):
+    console.println("PRINT292+++++++++++++++++++++++++++")
     # if needed we can come up with something smarter but it'll do for now
     if sample_size < 1:
         raise AssertionError("Percentiles require at least one sample")
@@ -1684,6 +1762,7 @@ def percentiles_for_sample_size(sample_size):
 
 
 class GlobalStatsCalculator:
+    console.println("PRINT293+++++++++++++++++++++++++++")
     def __init__(self, store, workload, test_procedure):
         self.store = store
         self.logger = logging.getLogger(__name__)
@@ -1691,6 +1770,7 @@ class GlobalStatsCalculator:
         self.test_procedure = test_procedure
 
     def __call__(self):
+        console.println("PRINT294+++++++++++++++++++++++++++")
         result = GlobalStats()
 
         for tasks in self.test_procedure.schedule:
@@ -1701,6 +1781,7 @@ class GlobalStatsCalculator:
                 duration = self.duration(t)
                 if task.operation.include_in_results_publishing or error_rate > 0:
                     self.logger.debug("Gathering request metrics for [%s].", t)
+                    console.println("PRINT307c+++++++++++++++++++++++++++")
                     result.add_op_metrics(
                         t,
                         task.operation.name,
@@ -1765,6 +1846,7 @@ class GlobalStatsCalculator:
         return result
 
     def merge(self, *args):
+        console.println("PRINT295+++++++++++++++++++++++++++")
         # This is similar to dict(collections.ChainMap(args)) except that we skip `None` in our implementation.
         result = {}
         for arg in args:
@@ -1773,6 +1855,7 @@ class GlobalStatsCalculator:
         return result
 
     def sum(self, metric_name):
+        console.println("PRINT296+++++++++++++++++++++++++++")
         values = self.store.get(metric_name)
         if values:
             return sum(values)
@@ -1780,9 +1863,11 @@ class GlobalStatsCalculator:
             return None
 
     def one(self, metric_name):
+        console.println("PRINT297+++++++++++++++++++++++++++")
         return self.store.get_one(metric_name)
 
     def summary_stats(self, metric_name, task_name, operation_type):
+        console.println("PRINT298+++++++++++++++++++++++++++")
         mean = self.store.get_mean(metric_name, task=task_name, operation_type=operation_type, sample_type=SampleType.Normal)
         median = self.store.get_median(metric_name, task=task_name, operation_type=operation_type, sample_type=SampleType.Normal)
         unit = self.store.get_unit(metric_name, task=task_name, operation_type=operation_type)
@@ -1805,6 +1890,7 @@ class GlobalStatsCalculator:
             }
 
     def shard_stats(self, metric_name):
+        console.println("PRINT299+++++++++++++++++++++++++++")
         values = self.store.get_raw(metric_name, mapper=lambda doc: doc["per-shard"])
         unit = self.store.get_unit(metric_name)
         if values:
@@ -1819,6 +1905,7 @@ class GlobalStatsCalculator:
             return {}
 
     def ml_processing_time_stats(self):
+        console.println("PRINT300+++++++++++++++++++++++++++")
         values = self.store.get_raw("ml_processing_time")
         result = []
         if values:
@@ -1834,6 +1921,7 @@ class GlobalStatsCalculator:
         return result
 
     def total_transform_metric(self, metric_name):
+        console.println("PRINT301+++++++++++++++++++++++++++")
         values = self.store.get_raw(metric_name)
         result = []
         if values:
@@ -1848,18 +1936,23 @@ class GlobalStatsCalculator:
         return result
 
     def error_rate(self, task_name, operation_type):
+        console.println("PRINT302+++++++++++++++++++++++++++")
         return self.store.get_error_rate(task=task_name, operation_type=operation_type, sample_type=SampleType.Normal)
 
     def duration(self, task_name):
+        console.println("PRINT302+++++++++++++++++++++++++++")
         return self.store.get_one("service_time", task=task_name, mapper=lambda doc: doc["relative-time-ms"],
                                   sort_key="relative-time-ms", sort_reverse=True)
 
     def median(self, metric_name, task_name=None, operation_type=None, sample_type=None):
+        console.println("PRINT303+++++++++++++++++++++++++++")
         return self.store.get_median(metric_name, task=task_name, operation_type=operation_type, sample_type=sample_type)
 
     def single_latency(self, task, operation_type, metric_name="latency"):
+        console.println("PRINT304+++++++++++++++++++++++++++")
         sample_type = SampleType.Normal
         stats = self.store.get_stats(metric_name, task=task, operation_type=operation_type, sample_type=sample_type)
+        console.println("stats1", stats)
         sample_size = stats["count"] if stats else 0
         if sample_size > 0:
             percentiles = self.store.get_percentiles(metric_name,
@@ -1878,12 +1971,15 @@ class GlobalStatsCalculator:
                 stats[encode_float_key(k)] = v
             stats["mean"] = mean
             stats["unit"] = unit
+            console.println("PRINT304imp+++++++++++++++++++++++++++")
+            console.println("stats2", stats)
             return stats
         else:
             return {}
 
 
 class GlobalStats:
+    console.println("PRINT305+++++++++++++++++++++++++++")
     def __init__(self, d=None):
         self.op_metrics = self.v(d, "op_metrics", default=[])
         self.total_time = self.v(d, "total_time")
@@ -1924,9 +2020,11 @@ class GlobalStats:
         self.total_transform_throughput = self.v(d, "total_transform_throughput")
 
     def as_dict(self):
+        console.println("PRINT306+++++++++++++++++++++++++++")
         return self.__dict__
 
     def as_flat_list(self):
+        console.println("PRINT307+++++++++++++++++++++++++++")
         def op_metrics(op_item, key, single_value=False):
             doc = {
                 "task": op_item["task"],
@@ -1948,6 +2046,7 @@ class GlobalStats:
                     if "throughput" in item:
                         all_results.append(op_metrics(item, "throughput"))
                     if "latency" in item:
+                        console.println("PRINT307a+++++++++++++++++++++++++++")
                         all_results.append(op_metrics(item, "latency"))
                     if "service_time" in item:
                         all_results.append(op_metrics(item, "service_time"))
@@ -1993,9 +2092,11 @@ class GlobalStats:
         return sorted(all_results, key=lambda m: m["name"])
 
     def v(self, d, k, default=None):
+        console.println("PRINT308+++++++++++++++++++++++++++")
         return d.get(k, default) if d else default
 
     def add_op_metrics(self, task, operation, throughput, latency, service_time, processing_time, error_rate, duration, meta):
+        console.println("PRINT309+++++++++++++++++++++++++++")
         doc = {
             "task": task,
             "operation": operation,
@@ -2011,10 +2112,12 @@ class GlobalStats:
         self.op_metrics.append(doc)
 
     def tasks(self):
+        console.println("PRINT310+++++++++++++++++++++++++++")
         # ensure we can read test_execution.json files before Benchmark 0.8.0
         return [v.get("task", v["operation"]) for v in self.op_metrics]
 
     def metrics(self, task):
+        console.println("PRINT311+++++++++++++++++++++++++++")
         # ensure we can read test_execution.json files before Benchmark 0.8.0
         for r in self.op_metrics:
             if r.get("task", r["operation"]) == task:
@@ -2023,12 +2126,14 @@ class GlobalStats:
 
 
 class SystemStatsCalculator:
+    console.println("PRINT205+++++++++++++++++++++++++++")
     def __init__(self, store, node_name):
         self.store = store
         self.logger = logging.getLogger(__name__)
         self.node_name = node_name
 
     def __call__(self):
+        console.println("PRINT312+++++++++++++++++++++++++++")
         result = SystemStats()
         self.logger.debug("Calculating system metrics for [%s]", self.node_name)
         self.logger.debug("Gathering disk metrics.")
@@ -2039,6 +2144,7 @@ class SystemStatsCalculator:
         return result
 
     def add(self, result, raw_metric_key, summary_metric_key):
+        console.println("PRINT313+++++++++++++++++++++++++++")
         metric_value = self.store.get_one(raw_metric_key, node_name=self.node_name)
         metric_unit = self.store.get_unit(raw_metric_key, node_name=self.node_name)
         if metric_value:
@@ -2049,6 +2155,7 @@ class SystemStatsCalculator:
 
 
 class SystemStats:
+    console.println("PRINT206+++++++++++++++++++++++++++")
     def __init__(self, d=None):
         self.node_metrics = self.v(d, "node_metrics", default=[])
 
@@ -2066,6 +2173,7 @@ class SystemStats:
         self.node_metrics.append(metric)
 
     def as_flat_list(self):
+        console.println("PRINT314+++++++++++++++++++++++++++")
         all_results = []
         for v in self.node_metrics:
             all_results.append({"node": v["node"], "name": v["name"], "value": {"single": v["value"]}})

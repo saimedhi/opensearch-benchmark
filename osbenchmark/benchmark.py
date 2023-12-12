@@ -40,9 +40,11 @@ from osbenchmark import version, actor, config, paths, \
 from osbenchmark.builder import provision_config, builder
 from osbenchmark.workload_generator import workload_generator
 from osbenchmark.utils import io, convert, process, console, net, opts, versions
-
+console.println("PRINT1+++++++++++++++++++++++++++")
 
 def create_arg_parser():
+    console.println("PRINT2+++++++++++++++++++++++++++")
+    
     def positive_number(v):
         value = int(v)
         if value <= 0:
@@ -50,12 +52,14 @@ def create_arg_parser():
         return value
 
     def non_empty_list(arg):
+        console.println("PRINT3+++++++++++++++++++++++++++")
         lst = opts.csv_to_list(arg)
         if len(lst) < 1:
             raise argparse.ArgumentError(argument=None, message="At least one argument required!")
         return lst
 
     def runtime_jdk(v):
+        console.println("PRINT4+++++++++++++++++++++++++++")
         if v == "bundled":
             return v
         else:
@@ -65,6 +69,7 @@ def create_arg_parser():
                 raise argparse.ArgumentTypeError(f"must be a positive number or 'bundled' but was {v}")
 
     def supported_os_version(v):
+        console.println("PRINT5+++++++++++++++++++++++++++")
         if v:
             min_os_version = versions.Version.from_string(version.minimum_os_version())
             specified_version = versions.Version.from_string(v)
@@ -73,6 +78,7 @@ def create_arg_parser():
         return v
 
     def add_workload_source(subparser):
+        console.println("PRINT6+++++++++++++++++++++++++++")
         workload_source_group = subparser.add_mutually_exclusive_group()
         workload_source_group.add_argument(
             "--workload-repository",
@@ -626,13 +632,20 @@ def print_help_on_errors():
 
 def execute_test(cfg, kill_running_processes=False):
     logger = logging.getLogger(__name__)
-
+    console.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    console.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    console.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    console.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    console.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    console.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    
     if kill_running_processes:
         logger.info("Killing running Benchmark processes")
 
         # Kill any lingering Benchmark processes before attempting to continue - the actor system needs to be a singleton on this machine
         # noinspection PyBroadException
         try:
+            console.println("PRINT10+++++++++++++++++++++++++++")
             process.kill_running_benchmark_instances()
         except BaseException:
             logger.exception(
@@ -641,7 +654,7 @@ def execute_test(cfg, kill_running_processes=False):
         other_benchmark_processes = process.find_all_other_benchmark_processes()
         if other_benchmark_processes:
             pids = [p.pid for p in other_benchmark_processes]
-
+            console.println("PRINT11+++++++++++++++++++++++++++")
             msg = f"There are other Benchmark processes running on this machine (PIDs: {pids}) but only one Benchmark " \
                   f"benchmark is allowed to run at the same time.\n\nYou can use --kill-running-processes flag " \
                   f"to kill running processes automatically and allow Benchmark to continue to run a new benchmark. " \
@@ -655,7 +668,9 @@ def with_actor_system(runnable, cfg):
     logger = logging.getLogger(__name__)
     already_running = actor.actor_system_already_running()
     logger.info("Actor system already running locally? [%s]", str(already_running))
+    console.println("PRINT12+++++++++++++++++++++++++++")
     try:
+        console.println("PRINT13+++++++++++++++++++++++++++")
         actors = actor.bootstrap_actor_system(try_join=already_running, prefer_local_only=not already_running)
         # We can only support remote benchmarks if we have a dedicated daemon that is not only bound to 127.0.0.1
         cfg.add(config.Scope.application, "system", "remote.benchmarking.supported", already_running)

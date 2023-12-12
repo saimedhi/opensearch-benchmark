@@ -58,6 +58,7 @@ class PrepareBenchmark:
     """
 
     def __init__(self, config, workload):
+        console.println("PRINT31+++++++++++++++++++++++++++")
         """
         :param config: Benchmark internal configuration object.
         :param workload: The workload to use.
@@ -67,6 +68,7 @@ class PrepareBenchmark:
 
 
 class StartBenchmark:
+    console.println("PRINT32+++++++++++++++++++++++++++")
     pass
 
 
@@ -75,7 +77,9 @@ class PrepareWorkload:
     Initiates preparation of a workload.
 
     """
+    console.println("PRINT33+++++++++++++++++++++++++++")
     def __init__(self, cfg, workload):
+        console.println("PRINT34+++++++++++++++++++++++++++")
         """
         :param cfg: Benchmark internal configuration object.
         :param workload: The workload to use.
@@ -85,23 +89,27 @@ class PrepareWorkload:
 
 
 class WorkloadPrepared:
+    console.println("PRINT35+++++++++++++++++++++++++++")
     pass
 
 
 class StartTaskLoop:
     def __init__(self, workload_name, cfg):
+        console.println("PRINT36+++++++++++++++++++++++++++")
         self.workload_name = workload_name
         self.cfg = cfg
 
 
 class DoTask:
     def __init__(self, task, cfg):
+        console.println("PRINT38+++++++++++++++++++++++++++")
         self.task = task
         self.cfg = cfg
 
 
 @dataclass(frozen=True)
 class WorkerTask:
+    console.println("PRINT37+++++++++++++++++++++++++++")
     """
     Unit of work that should be completed by the low-level TaskExecutionActor
     """
@@ -110,14 +118,17 @@ class WorkerTask:
 
 
 class ReadyForWork:
+    console.println("PRINT39+++++++++++++++++++++++++++")
     pass
 
 
 class WorkerIdle:
+    console.println("PRINT40+++++++++++++++++++++++++++")
     pass
 
 
 class PreparationComplete:
+    console.println("PRINT41+++++++++++++++++++++++++++")
     def __init__(self, distribution_flavor, distribution_version, revision):
         self.distribution_flavor = distribution_flavor
         self.distribution_version = distribution_version
@@ -129,6 +140,7 @@ class StartWorker:
     Starts a worker.
     """
 
+    console.println("PRINT42+++++++++++++++++++++++++++")
     def __init__(self, worker_id, config, workload, client_allocations):
         """
         :param worker_id: Unique (numeric) id of the worker.
@@ -136,6 +148,7 @@ class StartWorker:
         :param workload: The workload to use.
         :param client_allocations: A structure describing which clients need to run which tasks.
         """
+        console.println("PRINT43+++++++++++++++++++++++++++")
         self.worker_id = worker_id
         self.config = config
         self.workload = workload
@@ -146,12 +159,14 @@ class Drive:
     """
     Tells a load generator to drive (either after a join point or initially).
     """
+    console.println("PRINT44+++++++++++++++++++++++++++")
 
     def __init__(self, client_start_timestamp):
         self.client_start_timestamp = client_start_timestamp
 
 
 class CompleteCurrentTask:
+    console.println("PRINT45+++++++++++++++++++++++++++")
     """
     Tells a load generator to prematurely complete its current task.
     This is used to model task dependencies for parallel tasks (i.e. if a
@@ -162,6 +177,7 @@ class CompleteCurrentTask:
 
 
 class UpdateSamples:
+    console.println("PRINT46+++++++++++++++++++++++++++")
     """
     Used to send samples from a load generator node to the master.
     """
@@ -172,6 +188,7 @@ class UpdateSamples:
 
 
 class JoinPointReached:
+    console.println("PRINT47+++++++++++++++++++++++++++")
     """
     Tells the master that a load generator has reached a join point. Used for coordination across multiple load generators.
     """
@@ -186,6 +203,7 @@ class JoinPointReached:
 
 
 class BenchmarkComplete:
+    console.println("PRINT48+++++++++++++++++++++++++++")
     """
     Indicates that the benchmark is complete.
     """
@@ -195,12 +213,14 @@ class BenchmarkComplete:
 
 
 class TaskFinished:
+    console.println("PRINT49+++++++++++++++++++++++++++")
     def __init__(self, metrics, next_task_scheduled_in):
         self.metrics = metrics
         self.next_task_scheduled_in = next_task_scheduled_in
 
 
 class WorkerCoordinatorActor(actor.BenchmarkActor):
+    console.println("PRINT50+++++++++++++++++++++++++++")
     RESET_RELATIVE_TIME_MARKER = "reset_relative_time"
 
     WAKEUP_INTERVAL_SECONDS = 1
@@ -213,6 +233,7 @@ class WorkerCoordinatorActor(actor.BenchmarkActor):
     """
 
     def __init__(self):
+        console.println("PRINT51+++++++++++++++++++++++++++")
         super().__init__()
         self.start_sender = None
         self.coordinator = None
@@ -221,25 +242,30 @@ class WorkerCoordinatorActor(actor.BenchmarkActor):
         self.cluster_details = None
 
     def receiveMsg_PoisonMessage(self, poisonmsg, sender):
+        console.println("PRINT52+++++++++++++++++++++++++++")
         self.logger.error("Main worker_coordinator received a fatal indication from load generator (%s). Shutting down.", poisonmsg.details)
         self.coordinator.close()
         self.send(self.start_sender, actor.BenchmarkFailure("Fatal workload or load generator indication", poisonmsg.details))
 
     def receiveMsg_BenchmarkFailure(self, msg, sender):
+        console.println("PRINT53+++++++++++++++++++++++++++")
         self.logger.error("Main worker_coordinator received a fatal exception from load generator. Shutting down.")
         self.coordinator.close()
         self.send(self.start_sender, msg)
 
     def receiveMsg_BenchmarkCancelled(self, msg, sender):
+        console.println("PRINT54+++++++++++++++++++++++++++")
         self.logger.info("Main worker_coordinator received a notification that the benchmark has been cancelled.")
         self.coordinator.close()
         self.send(self.start_sender, msg)
 
     def receiveMsg_ActorExitRequest(self, msg, sender):
+        console.println("PRINT55+++++++++++++++++++++++++++")
         self.logger.info("Main worker_coordinator received ActorExitRequest and will terminate all load generators.")
         self.status = "exiting"
 
     def receiveMsg_ChildActorExited(self, msg, sender):
+        console.println("PRINT56+++++++++++++++++++++++++++")
         # is it a worker?
         if msg.childAddress in self.coordinator.workers:
             worker_index = self.coordinator.workers.index(msg.childAddress)
@@ -252,35 +278,42 @@ class WorkerCoordinatorActor(actor.BenchmarkActor):
             self.logger.info("A workload preparator has exited.")
 
     def receiveUnrecognizedMessage(self, msg, sender):
+        console.println("PRINT57+++++++++++++++++++++++++++")
         self.logger.info("Main worker_coordinator received unknown message [%s] (ignoring).", str(msg))
 
     @actor.no_retry("worker_coordinator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_PrepareBenchmark(self, msg, sender):
+        console.println("PRINT58+++++++++++++++++++++++++++")
         self.start_sender = sender
         self.coordinator = WorkerCoordinator(self, msg.config)
         self.coordinator.prepare_benchmark(msg.workload)
 
     @actor.no_retry("worker_coordinator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_StartBenchmark(self, msg, sender):
+        console.println("PRINT59+++++++++++++++++++++++++++")
         self.start_sender = sender
         self.coordinator.start_benchmark()
         self.wakeupAfter(datetime.timedelta(seconds=WorkerCoordinatorActor.WAKEUP_INTERVAL_SECONDS))
 
     @actor.no_retry("worker_coordinator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_WorkloadPrepared(self, msg, sender):
+        console.println("PRINT60+++++++++++++++++++++++++++")
         self.transition_when_all_children_responded(sender, msg,
                                                     expected_status=None, new_status=None, transition=self._after_workload_prepared)
 
     @actor.no_retry("worker_coordinator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_JoinPointReached(self, msg, sender):
+        console.println("PRINT61+++++++++++++++++++++++++++")
         self.coordinator.joinpoint_reached(msg.worker_id, msg.worker_timestamp, msg.task)
 
     @actor.no_retry("worker_coordinator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_UpdateSamples(self, msg, sender):
+        console.println("PRINT62+++++++++++++++++++++++++++")
         self.coordinator.update_samples(msg.samples)
 
     @actor.no_retry("worker_coordinator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_WakeupMessage(self, msg, sender):
+        console.println("PRINT63+++++++++++++++++++++++++++")
         if msg.payload == WorkerCoordinatorActor.RESET_RELATIVE_TIME_MARKER:
             self.coordinator.reset_relative_time()
         elif not self.coordinator.finished():
@@ -292,18 +325,23 @@ class WorkerCoordinatorActor(actor.BenchmarkActor):
             self.wakeupAfter(datetime.timedelta(seconds=WorkerCoordinatorActor.WAKEUP_INTERVAL_SECONDS))
 
     def create_client(self, host):
+        console.println("PRINT64+++++++++++++++++++++++++++")
         return self.createActor(Worker, targetActorRequirements=self._requirements(host))
 
     def start_worker(self, worker_coordinator, worker_id, cfg, workload, allocations):
+        console.println("PRINT65+++++++++++++++++++++++++++")
         self.send(worker_coordinator, StartWorker(worker_id, cfg, workload, allocations))
 
     def drive_at(self, worker_coordinator, client_start_timestamp):
+        console.println("PRINT66+++++++++++++++++++++++++++")
         self.send(worker_coordinator, Drive(client_start_timestamp))
 
     def complete_current_task(self, worker_coordinator):
+        console.println("PRINT67+++++++++++++++++++++++++++")
         self.send(worker_coordinator, CompleteCurrentTask())
 
     def on_task_finished(self, metrics, next_task_scheduled_in):
+        console.println("PRINT68+++++++++++++++++++++++++++")
         if next_task_scheduled_in > 0:
             self.wakeupAfter(datetime.timedelta(seconds=next_task_scheduled_in), payload=WorkerCoordinatorActor.RESET_RELATIVE_TIME_MARKER)
         else:
@@ -311,15 +349,18 @@ class WorkerCoordinatorActor(actor.BenchmarkActor):
         self.send(self.start_sender, TaskFinished(metrics, next_task_scheduled_in))
 
     def _requirements(self, host):
+        console.println("PRINT69+++++++++++++++++++++++++++")
         if host == "localhost":
             return {"coordinator": True}
         else:
             return {"ip": host}
 
     def on_cluster_details_retrieved(self, cluster_details):
+        console.println("PRINT70+++++++++++++++++++++++++++")
         self.cluster_details = cluster_details
 
     def prepare_workload(self, hosts, cfg, workload):
+        console.println("PRINT71+++++++++++++++++++++++++++")
         self.logger.info("Starting prepare workload process on hosts [%s]", hosts)
         self.children = [self._create_workload_preparator(h) for h in hosts]
         msg = PrepareWorkload(cfg, workload)
@@ -327,9 +368,11 @@ class WorkerCoordinatorActor(actor.BenchmarkActor):
             self.send(child, msg)
 
     def _create_workload_preparator(self, host):
+        console.println("PRINT72+++++++++++++++++++++++++++")
         return self.createActor(WorkloadPreparationActor, targetActorRequirements=self._requirements(host))
 
     def _after_workload_prepared(self):
+        console.println("PRINT73+++++++++++++++++++++++++++")
         cluster_version = self.cluster_details["version"] if self.cluster_details else {}
         for child in self.children:
             self.send(child, thespian.actors.ActorExitRequest())
@@ -342,10 +385,12 @@ class WorkerCoordinatorActor(actor.BenchmarkActor):
         ))
 
     def on_benchmark_complete(self, metrics):
+        console.println("PRINT74+++++++++++++++++++++++++++")
         self.send(self.start_sender, BenchmarkComplete(metrics))
 
 
 def load_local_config(coordinator_config):
+    console.println("PRINT75+++++++++++++++++++++++++++")
     cfg = config.auto_load_local_config(coordinator_config, additional_sections=[
         # only copy the relevant bits
         "workload", "worker_coordinator", "client",
@@ -362,7 +407,9 @@ class TaskExecutionActor(actor.BenchmarkActor):
     """
     This class should be used for long-running tasks, as it ensures they do not block the actor's messaging system
     """
+    console.println("PRINT76+++++++++++++++++++++++++++")
     def __init__(self):
+        console.println("PRINT77+++++++++++++++++++++++++++")
         super().__init__()
         self.pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.executor_future = None
@@ -374,6 +421,7 @@ class TaskExecutionActor(actor.BenchmarkActor):
 
     @actor.no_retry("task executor")  # pylint: disable=no-value-for-parameter
     def receiveMsg_StartTaskLoop(self, msg, sender):
+        console.println("PRINT78+++++++++++++++++++++++++++")
         self.parent = sender
         self.workload_name = msg.workload_name
         self.cfg = load_local_config(msg.cfg)
@@ -384,6 +432,7 @@ class TaskExecutionActor(actor.BenchmarkActor):
 
     @actor.no_retry("task executor")  # pylint: disable=no-value-for-parameter
     def receiveMsg_DoTask(self, msg, sender):
+        console.println("PRINT79+++++++++++++++++++++++++++")
         # actor can arbitrarily execute code based on these messages. if anyone besides our parent sends a task, ignore
         if sender != self.parent:
             msg = f"TaskExecutionActor expected message from [{self.parent}] but the received the following from " \
@@ -403,6 +452,7 @@ class TaskExecutionActor(actor.BenchmarkActor):
 
     @actor.no_retry("task executor")  # pylint: disable=no-value-for-parameter
     def receiveMsg_WakeupMessage(self, msg, sender):
+        console.println("PRINT80+++++++++++++++++++++++++++")
         if self.executor_future is not None and self.executor_future.done():
             e = self.executor_future.exception(timeout=0)
             if e:
@@ -417,16 +467,19 @@ class TaskExecutionActor(actor.BenchmarkActor):
             self.wakeupAfter(datetime.timedelta(seconds=self.wakeup_interval))
 
     def receiveMsg_BenchmarkFailure(self, msg, sender):
+        console.println("PRINT81+++++++++++++++++++++++++++")
         # sent by our no_retry infrastructure; forward to master
         self.send(self.parent, msg)
 
 class WorkloadPreparationActor(actor.BenchmarkActor):
+    console.println("PRINT82+++++++++++++++++++++++++++")
     class Status(Enum):
         INITIALIZING = "initializing"
         PROCESSOR_RUNNING = "processor running"
         PROCESSOR_COMPLETE = "processor complete"
 
     def __init__(self):
+        console.println("PRINT83+++++++++++++++++++++++++++")
         super().__init__()
         self.processors = queue.Queue()
         self.original_sender = None
@@ -455,6 +508,7 @@ class WorkloadPreparationActor(actor.BenchmarkActor):
 
     @actor.no_retry("workload preparator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_PrepareWorkload(self, msg, sender):
+        console.println("PRINT84+++++++++++++++++++++++++++")
         self.original_sender = sender
         # load node-specific config to have correct paths available
         self.cfg = load_local_config(msg.config)
@@ -477,6 +531,7 @@ class WorkloadPreparationActor(actor.BenchmarkActor):
                                              self.Status.PROCESSOR_RUNNING)
 
     def resume(self):
+        console.println("PRINT85+++++++++++++++++++++++++++")
         if not self.processors.empty():
             self._seed_tasks(self.processors.get())
             self.send_to_children_and_transition(self, StartTaskLoop(self.workload.name, self.cfg), self.Status.PROCESSOR_COMPLETE,
@@ -485,14 +540,17 @@ class WorkloadPreparationActor(actor.BenchmarkActor):
             self.send(self.original_sender, WorkloadPrepared())
 
     def _seed_tasks(self, processor):
+        console.println("PRINT86+++++++++++++++++++++++++++")
         self.tasks = list(WorkerTask(func, params) for func, params in
                           processor.on_prepare_workload(self.workload, self.data_root_dir))
 
     def _create_task_executor(self):
+        console.println("PRINT87+++++++++++++++++++++++++++")
         return self.createActor(TaskExecutionActor)
 
     @actor.no_retry("workload preparator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_ReadyForWork(self, msg, sender):
+        console.println("PRINT88+++++++++++++++++++++++++++")
         if self.tasks:
             next_task = self.tasks.pop()
         else:
@@ -503,17 +561,20 @@ class WorkloadPreparationActor(actor.BenchmarkActor):
 
     @actor.no_retry("workload preparator")  # pylint: disable=no-value-for-parameter
     def receiveMsg_WorkerIdle(self, msg, sender):
+        console.println("PRINT89+++++++++++++++++++++++++++")
         self.transition_when_all_children_responded(sender, msg, self.Status.PROCESSOR_RUNNING,
                                                     self.Status.PROCESSOR_COMPLETE, self.resume)
 
 
 def num_cores(cfg):
+    console.println("PRINT90+++++++++++++++++++++++++++")
     return int(cfg.opts("system", "available.cores", mandatory=False,
                          default_value=multiprocessing.cpu_count()))
 
 
 class WorkerCoordinator:
     def __init__(self, target, config, os_client_factory_class=client.OsClientFactory):
+        console.println("PRINT91+++++++++++++++++++++++++++")
         """
         Coordinates all workers. It is technology-agnostic, i.e. it does not know anything about actors. To allow us to hook in an actor,
         we provide a ``target`` parameter which will be called whenever some event has occurred. The ``target`` can use this to send
@@ -552,6 +613,7 @@ class WorkerCoordinator:
         self.telemetry = None
 
     def create_os_clients(self):
+        console.println("PRINT92+++++++++++++++++++++++++++")
         all_hosts = self.config.opts("client", "hosts").all_hosts
         opensearch = {}
         for cluster_name, cluster_hosts in all_hosts.items():
@@ -563,6 +625,7 @@ class WorkerCoordinator:
         return opensearch
 
     def prepare_telemetry(self, opensearch, enable):
+        console.println("PRINT93+++++++++++++++++++++++++++")
         enabled_devices = self.config.opts("telemetry", "devices")
         telemetry_params = self.config.opts("telemetry", "params")
         log_root = paths.test_execution_root(self.config)
@@ -589,6 +652,7 @@ class WorkerCoordinator:
         self.telemetry = telemetry.Telemetry(enabled_devices, devices=devices)
 
     def wait_for_rest_api(self, opensearch):
+        console.println("PRINT94+++++++++++++++++++++++++++")
         os_default = opensearch["default"]
         self.logger.info("Checking if REST API is available.")
         if client.wait_for_rest_layer(os_default, max_attempts=40):
@@ -598,6 +662,7 @@ class WorkerCoordinator:
             raise exceptions.SystemSetupError("OpenSearch REST API layer is not available.")
 
     def retrieve_cluster_info(self, opensearch):
+        console.println("PRINT95+++++++++++++++++++++++++++")
         try:
             return opensearch["default"].info()
         except BaseException:
@@ -605,6 +670,7 @@ class WorkerCoordinator:
             return None
 
     def prepare_benchmark(self, t):
+        console.println("PRINT96+++++++++++++++++++++++++++")
         self.workload = t
         self.test_procedure = select_test_procedure(self.config, self.workload)
         self.quiet = self.config.opts("system", "quiet.mode", mandatory=False, default_value=False)
@@ -652,6 +718,7 @@ class WorkerCoordinator:
         self.target.prepare_workload([h["host"] for h in self.worker_ips], self.config, self.workload)
 
     def start_benchmark(self):
+        console.println("PRINT97+++++++++++++++++++++++++++")
         self.logger.info("Benchmark is about to start.")
         # ensure relative time starts when the benchmark starts.
         self.reset_relative_time()
@@ -691,6 +758,7 @@ class WorkerCoordinator:
         self.update_progress_message()
 
     def joinpoint_reached(self, worker_id, worker_local_timestamp, task_allocations):
+        console.println("PRINT98+++++++++++++++++++++++++++")
         self.currently_completed += 1
         self.workers_completed_current_step[worker_id] = (worker_local_timestamp, time.perf_counter())
         self.logger.info("[%d/%d] workers reached join point [%d/%d].",
@@ -730,6 +798,7 @@ class WorkerCoordinator:
             self.may_complete_current_task(task_allocations)
 
     def move_to_next_task(self, workers_curr_step):
+        console.println("PRINT99+++++++++++++++++++++++++++")
         if self.config.opts("workload", "test.mode.enabled"):
             # don't wait if test mode is enabled and start the next task immediately.
             waiting_period = 0
@@ -754,6 +823,7 @@ class WorkerCoordinator:
             self.target.drive_at(worker, worker_start_timestamp)
 
     def may_complete_current_task(self, task_allocations):
+        console.println("PRINT100+++++++++++++++++++++++++++")
         joinpoints_completing_parent = [a for a in task_allocations if a.task.preceding_task_completes_parent]
         # we need to actively send CompleteCurrentTask messages to all remaining workers.
         if len(joinpoints_completing_parent) > 0 and not self.complete_current_task_sent:
@@ -786,18 +856,22 @@ class WorkerCoordinator:
                     self.logger.info("Client id(s) [%s] did not yet finish.", ",".join(map(str, pending_client_ids)))
 
     def reset_relative_time(self):
+        console.println("PRINT101+++++++++++++++++++++++++++")
         self.logger.debug("Resetting relative time of request metrics store.")
         self.metrics_store.reset_relative_time()
 
     def finished(self):
+        console.println("PRINT102+++++++++++++++++++++++++++")
         return self.current_step == self.number_of_steps
 
     def close(self):
+        console.println("PRINT103+++++++++++++++++++++++++++")
         self.progress_results_publisher.finish()
         if self.metrics_store and self.metrics_store.opened:
             self.metrics_store.close()
 
     def update_samples(self, samples):
+        console.println("PRINT104+++++++++++++++++++++++++++")
         if len(samples) > 0:
             self.raw_samples += samples
             # We need to check all samples, they will be from different clients
@@ -805,6 +879,7 @@ class WorkerCoordinator:
                 self.most_recent_sample_per_client[s.client_id] = s
 
     def update_progress_message(self, task_finished=False):
+        console.println("PRINT105+++++++++++++++++++++++++++")
         if not self.quiet and self.current_step >= 0:
             tasks = ",".join([t.name for t in self.tasks_per_join_point[self.current_step]])
 
@@ -824,6 +899,7 @@ class WorkerCoordinator:
                 self.progress_results_publisher.finish()
 
     def post_process_samples(self):
+        console.println("PRINT106+++++++++++++++++++++++++++")
         # we do *not* do this here to avoid concurrent updates (actors are single-threaded) but rather to make it clear that we use
         # only a snapshot and that new data will go to a new sample set.
         raw_samples = self.raw_samples
@@ -832,6 +908,7 @@ class WorkerCoordinator:
 
 
 class SamplePostprocessor:
+    console.println("PRINT107+++++++++++++++++++++++++++")
     def __init__(self, metrics_store, downsample_factor, workload_meta_data, test_procedure_meta_data):
         self.logger = logging.getLogger(__name__)
         self.metrics_store = metrics_store
@@ -841,6 +918,7 @@ class SamplePostprocessor:
         self.downsample_factor = downsample_factor
 
     def __call__(self, raw_samples):
+        console.println("PRINT108+++++++++++++++++++++++++++")
         if len(raw_samples) == 0:
             return
         total_start = time.perf_counter()
@@ -882,6 +960,7 @@ class SamplePostprocessor:
                                                                relative_time=timing.relative_time, meta_data=meta_data)
 
         end = time.perf_counter()
+        console.println("PRINT307d+++++++++++++++++++++++++++")
         self.logger.debug("Storing latency and service time took [%f] seconds.", (end - start))
         start = end
         aggregates = self.throughput_calculator.calculate(raw_samples)
@@ -916,6 +995,7 @@ class SamplePostprocessor:
                           len(raw_samples), final_sample_count, (end - total_start))
 
     def merge(self, *args):
+        console.println("PRINT109+++++++++++++++++++++++++++")
         result = {}
         for arg in args:
             if arg is not None:
@@ -924,6 +1004,7 @@ class SamplePostprocessor:
 
 
 def calculate_worker_assignments(host_configs, client_count):
+    console.println("PRINT110+++++++++++++++++++++++++++")
     """
     Assigns clients to workers on the provided hosts.
 
@@ -970,32 +1051,39 @@ def calculate_worker_assignments(host_configs, client_count):
     return assignments
 
 
+console.println("PRINT111+++++++++++++++++++++++++++")
 ClientAllocation = collections.namedtuple("ClientAllocation", ["client_id", "task"])
 
 
 class ClientAllocations:
+    console.println("PRINT112+++++++++++++++++++++++++++")
     def __init__(self):
         self.allocations = []
 
     def add(self, client_id, tasks):
+        console.println("PRINT113+++++++++++++++++++++++++++")
         self.allocations.append({
             "client_id": client_id,
             "tasks": tasks
         })
 
     def is_joinpoint(self, task_index):
+        console.println("PRINT114+++++++++++++++++++++++++++")
         return all(isinstance(t.task, JoinPoint) for t in self.tasks(task_index))
 
     def tasks(self, task_index, remove_empty=True):
+        console.println("PRINT115+++++++++++++++++++++++++++")
         current_tasks = []
         for allocation in self.allocations:
             tasks_at_index = allocation["tasks"][task_index]
             if remove_empty and tasks_at_index is not None:
                 current_tasks.append(ClientAllocation(allocation["client_id"], tasks_at_index))
+        console.println("current_tasks", current_tasks)
         return current_tasks
 
 
 class Worker(actor.BenchmarkActor):
+    console.println("PRINT118+++++++++++++++++++++++++++")
     """
     The actual worker that applies load against the cluster(s).
 
@@ -1028,6 +1116,7 @@ class Worker(actor.BenchmarkActor):
 
     @actor.no_retry("worker")  # pylint: disable=no-value-for-parameter
     def receiveMsg_StartWorker(self, msg, sender):
+        console.println("PRINT119+++++++++++++++++++++++++++")
         self.logger.info("Worker[%d] is about to start.", msg.worker_id)
         self.master = sender
         self.worker_id = msg.worker_id
@@ -1049,6 +1138,7 @@ class Worker(actor.BenchmarkActor):
 
     @actor.no_retry("worker")  # pylint: disable=no-value-for-parameter
     def receiveMsg_Drive(self, msg, sender):
+        console.println("PRINT120+++++++++++++++++++++++++++")
         sleep_time = datetime.timedelta(seconds=msg.client_start_timestamp - time.perf_counter())
         self.logger.info("Worker[%d] is continuing its work at task index [%d] on [%f], that is in [%s].",
                          self.worker_id, self.current_task_index, msg.client_start_timestamp, sleep_time)
@@ -1057,6 +1147,7 @@ class Worker(actor.BenchmarkActor):
 
     @actor.no_retry("worker")  # pylint: disable=no-value-for-parameter
     def receiveMsg_CompleteCurrentTask(self, msg, sender):
+        console.println("PRINT121+++++++++++++++++++++++++++")
         # finish now ASAP. Remaining samples will be sent with the next WakeupMessage. We will also need to skip to the next
         # JoinPoint. But if we are already at a JoinPoint at the moment, there is nothing to do.
         if self.at_joinpoint():
@@ -1069,6 +1160,7 @@ class Worker(actor.BenchmarkActor):
 
     @actor.no_retry("worker")  # pylint: disable=no-value-for-parameter
     def receiveMsg_WakeupMessage(self, msg, sender):
+        console.println("PRINT122+++++++++++++++++++++++++++")
         # it would be better if we could send ourselves a message at a specific time, simulate this with a boolean...
         if self.start_driving:
             self.start_driving = False
@@ -1106,6 +1198,7 @@ class Worker(actor.BenchmarkActor):
                 self.wakeupAfter(datetime.timedelta(seconds=self.wakeup_interval))
 
     def receiveMsg_ActorExitRequest(self, msg, sender):
+        console.println("PRINT123+++++++++++++++++++++++++++")
         self.logger.info("Worker[%s] has received ActorExitRequest.", str(self.worker_id))
         if self.executor_future is not None and self.executor_future.running():
             self.cancel.set()
@@ -1113,13 +1206,16 @@ class Worker(actor.BenchmarkActor):
         self.logger.info("Worker[%s] is exiting due to ActorExitRequest.", str(self.worker_id))
 
     def receiveMsg_BenchmarkFailure(self, msg, sender):
+        console.println("PRINT124+++++++++++++++++++++++++++")
         # sent by our no_retry infrastructure; forward to master
         self.send(self.master, msg)
 
     def receiveUnrecognizedMessage(self, msg, sender):
+        console.println("PRINT125+++++++++++++++++++++++++++")
         self.logger.info("Worker[%d] received unknown message [%s] (ignoring).", self.worker_id, str(msg))
 
     def drive(self):
+        console.println("PRINT126+++++++++++++++++++++++++++")
         task_allocations = self.current_tasks_and_advance()
         # skip non-tasks in the task list
         while len(task_allocations) == 0:
@@ -1152,20 +1248,25 @@ class Worker(actor.BenchmarkActor):
                 self.wakeupAfter(datetime.timedelta(seconds=self.wakeup_interval))
 
     def at_joinpoint(self):
+        console.println("PRINT127+++++++++++++++++++++++++++")
         return self.client_allocations.is_joinpoint(self.current_task_index)
 
     def current_tasks_and_advance(self):
+        console.println("PRINT128+++++++++++++++++++++++++++")
         self.current_task_index = self.next_task_index
         current = self.client_allocations.tasks(self.current_task_index)
         self.next_task_index += 1
         self.logger.debug("Worker[%d] is at task index [%d].", self.worker_id, self.current_task_index)
+        console.println("current", current)
         return current
 
     def send_samples(self):
+        console.println("PRINT129+++++++++++++++++++++++++++")
         if self.sampler:
             samples = self.sampler.samples
             if len(samples) > 0:
                 self.send(self.master, UpdateSamples(self.worker_id, samples))
+            console.println("samples", samples)
             return samples
         return None
 
@@ -1174,6 +1275,7 @@ class Sampler:
     """
     Encapsulates management of gathered samples.
     """
+    console.println("PRINT130+++++++++++++++++++++++++++")
 
     def __init__(self, start_timestamp, buffer_size=16384):
         self.start_timestamp = start_timestamp
@@ -1182,6 +1284,7 @@ class Sampler:
 
     def add(self, task, client_id, sample_type, meta_data, absolute_time, request_start, latency, service_time,
             processing_time, throughput, ops, ops_unit, time_period, percent_completed, dependent_timing=None):
+        console.println("PRINT131+++++++++++++++++++++++++++")
         try:
             self.q.put_nowait(
                 Sample(client_id, absolute_time, request_start, self.start_timestamp, task, sample_type, meta_data,
@@ -1192,6 +1295,7 @@ class Sampler:
 
     @property
     def samples(self):
+        console.println("PRINT132+++++++++++++++++++++++++++")
         samples = []
         try:
             while True:
@@ -1202,6 +1306,7 @@ class Sampler:
 
 
 class Sample:
+    console.println("PRINT133+++++++++++++++++++++++++++")
     def __init__(self, client_id, absolute_time, request_start, task_start, task, sample_type, request_meta_data, latency,
                  service_time, processing_time, throughput, total_ops, total_ops_unit, time_period,
                  percent_completed, dependent_timing=None, operation_name=None, operation_type=None):
@@ -1227,22 +1332,27 @@ class Sample:
 
     @property
     def operation_name(self):
+        console.println("PRINT134+++++++++++++++++++++++++++")
         return self._operation_name if self._operation_name else self.task.operation.name
 
     @property
     def operation_type(self):
+        console.println("PRINT135+++++++++++++++++++++++++++")
         return self._operation_type if self._operation_type else self.task.operation.type
 
     @property
     def operation_meta_data(self):
+        console.println("PRINT136+++++++++++++++++++++++++++")
         return self.task.operation.meta_data
 
     @property
     def relative_time(self):
+        console.println("PRINT137+++++++++++++++++++++++++++")
         return self.request_start - self.task_start
 
     @property
     def dependent_timings(self):
+        console.println("PRINT138+++++++++++++++++++++++++++")
         if self._dependent_timing:
             for t in self._dependent_timing:
                 yield Sample(self.client_id, t["absolute_time"], t["request_start"], self.task_start, self.task,
@@ -1251,12 +1361,14 @@ class Sample:
                              t["operation"], t["operation-type"])
 
     def __repr__(self, *args, **kwargs):
+        console.println("PRINT139+++++++++++++++++++++++++++")
         return f"[{self.absolute_time}; {self.relative_time}] [client [{self.client_id}]] [{self.task}] " \
                f"[{self.sample_type}]: [{self.latency}s] request latency, [{self.service_time}s] service time, " \
                f"[{self.total_ops} {self.total_ops_unit}]"
 
 
 def select_test_procedure(config, t):
+    console.println("PRINT140+++++++++++++++++++++++++++")
     test_procedure_name = config.opts("workload", "test_procedure.name")
     selected_test_procedure = t.find_test_procedure_or_default(test_procedure_name)
 
@@ -1268,6 +1380,7 @@ def select_test_procedure(config, t):
 
 class ThroughputCalculator:
     class TaskStats:
+        console.println("PRINT141+++++++++++++++++++++++++++")
         """
         Stores per task numbers needed for throughput calculation in between multiple calculations.
         """
@@ -1285,23 +1398,29 @@ class ThroughputCalculator:
 
         @property
         def throughput(self):
+            console.println("PRINT142+++++++++++++++++++++++++++")
             return self.total_count / self.interval
 
         def maybe_update_sample_type(self, current_sample_type):
+            console.println("PRINT143+++++++++++++++++++++++++++")
             if self.sample_type < current_sample_type:
                 self.sample_type = current_sample_type
                 self.has_samples_in_sample_type = False
 
         def update_interval(self, absolute_sample_time):
+            console.println("PRINT144+++++++++++++++++++++++++++")
             self.interval = max(absolute_sample_time - self.start_time, self.interval)
 
         def can_calculate_throughput(self):
+            console.println("PRINT145+++++++++++++++++++++++++++")
             return self.interval > 0 and self.interval >= self.bucket
 
         def can_add_final_throughput_sample(self):
+            console.println("PRINT146+++++++++++++++++++++++++++")
             return self.interval > 0 and not self.has_samples_in_sample_type
 
         def finish_bucket(self, new_total):
+            console.println("PRINT147+++++++++++++++++++++++++++")
             self.unprocessed = []
             self.total_count = new_total
             self.has_samples_in_sample_type = True
@@ -1311,6 +1430,7 @@ class ThroughputCalculator:
         self.task_stats = {}
 
     def calculate(self, samples, bucket_interval_secs=1):
+        console.println("PRINT148+++++++++++++++++++++++++++")
         """
         Calculates global throughput based on samples gathered from multiple load generators.
 
@@ -1353,6 +1473,7 @@ class ThroughputCalculator:
         return global_throughput
 
     def calculate_task_throughput(self, task, current_samples, bucket_interval_secs):
+        console.println("PRINT149+++++++++++++++++++++++++++")
         task_throughput = []
 
         if task not in self.task_stats:
@@ -1402,6 +1523,7 @@ class ThroughputCalculator:
         return task_throughput
 
     def map_task_throughput(self, current_samples):
+        console.println("PRINT150+++++++++++++++++++++++++++")
         throughput = []
         for sample in current_samples:
             throughput.append((sample.absolute_time,
@@ -1585,6 +1707,7 @@ class AsyncExecutor:
 
                 processing_end = time.perf_counter()
                 service_time = request_end - request_start
+                console.println("imp 2 * service_time", service_time)
                 processing_time = processing_end - processing_start
                 time_period = request_end - total_start
                 self.schedule_handle.after_request(processing_end, total_ops, total_ops_unit, request_meta_data)
@@ -1744,7 +1867,9 @@ class JoinPoint:
 
 
 class TaskAllocation:
+    console.println("PRINT152+++++++++++++++++++++++++++")
     def __init__(self, task, client_index_in_task):
+        console.println("PRINT151+++++++++++++++++++++++++++")
         self.task = task
         self.client_index_in_task = client_index_in_task
 
@@ -1763,11 +1888,13 @@ class Allocator:
     Decides which operations runs on which client and how to partition them.
     """
 
+    console.println("PRINT153+++++++++++++++++++++++++++")
     def __init__(self, schedule):
         self.schedule = schedule
 
     @property
     def allocations(self):
+        console.println("PRINT154+++++++++++++++++++++++++++")
         """
         Calculates an allocation matrix consisting of two dimensions. The first dimension is the client. The second dimension are the task
          this client needs to run. The matrix shape is rectangular (i.e. it is not ragged). There are three types of entries in the matrix:
@@ -1821,6 +1948,7 @@ class Allocator:
 
     @property
     def join_points(self):
+        console.println("PRINT155+++++++++++++++++++++++++++")
         """
         :return: A list of all join points for this allocations.
         """
@@ -1828,6 +1956,7 @@ class Allocator:
 
     @property
     def tasks_per_joinpoint(self):
+        console.println("PRINT156+++++++++++++++++++++++++++")
         """
 
         Calculates a flat list of all tasks that are run in between join points.
@@ -1861,6 +1990,7 @@ class Allocator:
 
     @property
     def clients(self):
+        console.println("PRINT157+++++++++++++++++++++++++++")
         """
         :return: The maximum number of clients involved in executing the given schedule.
         """
@@ -1880,6 +2010,7 @@ class Allocator:
 # Runs a concrete schedule on one worker client
 # Needs to determine the runners and concrete iterations per client.
 def schedule_for(task, client_index, parameter_source):
+    console.println("PRINT158+++++++++++++++++++++++++++")
     """
     Calculates a client's schedule for a given task.
 
@@ -1934,6 +2065,7 @@ def schedule_for(task, client_index, parameter_source):
 
 
 def requires_time_period_schedule(task, task_runner, params):
+    console.println("PRINT159+++++++++++++++++++++++++++")
     if task.warmup_time_period is not None or task.time_period is not None:
         return True
     # user has explicitly requested iterations
@@ -1958,6 +2090,7 @@ class ScheduleHandle:
         :param params: The parameter source for a given operation.
         :return: A generator for the corresponding parameters.
         """
+        console.println("PRINT160+++++++++++++++++++++++++++")
         self.task_name = task_name
         self.sched = sched
         self.task_progress_control = task_progress_control
@@ -1970,12 +2103,15 @@ class ScheduleHandle:
         #self.loop = asyncio.get_event_loop()
 
     def before_request(self, now):
+        console.println("PRINT161+++++++++++++++++++++++++++")
         self.sched.before_request(now)
 
     def after_request(self, now, weight, unit, request_meta_data):
+        console.println("PRINT162+++++++++++++++++++++++++++")
         self.sched.after_request(now, weight, unit, request_meta_data)
 
     async def __call__(self):
+        console.println("PRINT163+++++++++++++++++++++++++++")
         next_scheduled = 0
         if self.task_progress_control.infinite:
             param_source_knows_progress = hasattr(self.params, "percent_completed")
@@ -2008,6 +2144,7 @@ class ScheduleHandle:
 
 
 class TimePeriodBased:
+    console.println("PRINT164+++++++++++++++++++++++++++")
     def __init__(self, warmup_time_period, time_period):
         self._warmup_time_period = warmup_time_period
         self._time_period = time_period
@@ -2019,6 +2156,7 @@ class TimePeriodBased:
         self._now = None
 
     def start(self):
+        console.println("PRINT165+++++++++++++++++++++++++++")
         self._now = time.perf_counter()
         self._start = self._now
 
@@ -2050,6 +2188,7 @@ class TimePeriodBased:
 
 
 class IterationBased:
+    console.println("PRINT166+++++++++++++++++++++++++++")
     def __init__(self, warmup_iterations, iterations):
         self._warmup_iterations = warmup_iterations
         self._iterations = iterations
@@ -2074,14 +2213,17 @@ class IterationBased:
 
     @property
     def percent_completed(self):
+        console.println("PRINT167+++++++++++++++++++++++++++")
         return (self._it + 1) / self._total_iterations
 
     @property
     def completed(self):
+        console.println("PRINT168+++++++++++++++++++++++++++")
         return self._it >= self._total_iterations
 
     def next(self):
         self._it += 1
 
     def __str__(self):
+        console.println("PRINT169+++++++++++++++++++++++++++")
         return "iteration-count-based"
