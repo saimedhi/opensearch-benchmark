@@ -143,6 +143,7 @@ class BenchmarkActor(thespian.actors.ActorTypeDispatcher):
             self.logger.debug("[%d] of [%d] child actors have responded for transition from [%s] to [%s].",
                               response_count, expected_count, self.status, new_status)
             if response_count == expected_count:
+                print("all child actors transitioning from [%s] to [%s]", self.status, new_status)
                 self.logger.debug("All [%d] child actors have responded. Transitioning now from [%s] to [%s].",
                                   expected_count, self.status, new_status)
                 # all nodes have responded, change status
@@ -167,8 +168,9 @@ class BenchmarkActor(thespian.actors.ActorTypeDispatcher):
         :param expected_status: The status in which this actor should be upon calling this method.
         :param new_status: The new status.
         """
+        print("@send_to_children_and_transition in actor.py Sends the provided message to all child actors and immediately transitions to the new status.")
         if self.is_current_status_expected(expected_status):
-            self.logger.info("Transitioning from [%s] to [%s].", self.status, new_status)
+            print("Transitioning from [%s] to [%s].", self.status, new_status)
             self.status = new_status
             for m in filter(None, self.children):
                 self.send(m, msg)
@@ -251,6 +253,7 @@ def bootstrap_actor_system(try_join=False, prefer_local_only=False, local_ip=Non
             # Make the coordinator node the convention leader
             capabilities["Convention Address.IPv4"] = "%s:1900" % coordinator_ip
         logger.info("Starting actor system with system base [%s] and capabilities [%s].", system_base, capabilities)
+        print("@@@@ returning actor system", thespian.actors.ActorSystem(system_base, logDefs=log.load_configuration(), capabilities=capabilities))
         return thespian.actors.ActorSystem(system_base,
                                            logDefs=log.load_configuration(),
                                            capabilities=capabilities)

@@ -22,10 +22,10 @@ class PluginPreparer(Preparer):
         plugin_binary_path = binaries.get(self.plugin.name)
 
         if plugin_binary_path:
-            self.logger.info("Installing [%s] into [%s] from [%s]", self.plugin.name, host.node.binary_path, plugin_binary_path)
+            print("Installing [%s] into [%s] from [%s]", self.plugin.name, host.node.binary_path, plugin_binary_path)
             return '%s install --batch "%s"' % (installer_binary_path, plugin_binary_path)
         else:
-            self.logger.info("Installing [%s] into [%s]", self.plugin.name, host.node.binary_path)
+            print("Installing [%s] into [%s]", self.plugin.name, host.node.binary_path)
             return '%s install --batch "%s"' % (installer_binary_path, self.plugin.name)
 
     def get_config_vars(self, host, node, all_node_ips):

@@ -13,13 +13,13 @@ class OpenSearchDistributionRepositoryProvider:
         is_runtime_jdk_bundled = self.provision_config_instance.variables["system"]["runtime"]["jdk"]["bundled"]
         distribution_repository = self.provision_config_instance.variables["distribution"]["repository"]
 
-        self.logger.info("runtime_jdk_bundled? [%s]", is_runtime_jdk_bundled)
+        print("runtime_jdk_bundled? [%s]", is_runtime_jdk_bundled)
         if is_runtime_jdk_bundled:
             url_key = f"distribution.jdk.bundled.{distribution_repository}_url"
         else:
             url_key = f"distribution.jdk.unbundled.{distribution_repository}_url"
 
-        self.logger.info("key: [%s]", url_key)
+        print("key: [%s]", url_key)
         return self.repository_url_provider.render_url_for_key(host, self.provision_config_instance.variables, url_key)
 
     def get_file_name_from_download_url(self, download_url):

@@ -13,7 +13,7 @@ class HostCleaner:
             console.info("Preserving benchmark candidate installation.", logger=self.logger)
             return
 
-        self.logger.info("Wiping benchmark candidate installation at [%s].", host.node.binary_path)
+        print("Wiping benchmark candidate installation at [%s].", host.node.binary_path)
 
         for data_path in host.node.data_paths:
             self.path_manager.delete_path(host, data_path)

@@ -1070,7 +1070,7 @@ class Slice:
     def open(self, file_name, mode, bulk_size):
         self.bulk_size = bulk_size
         self.source = self.source_class(file_name, mode).open()
-        self.logger.info("Will read [%d] lines from [%s] starting from line [%d] with bulk size [%d].",
+        print("Will read [%d] lines from [%s] starting from line [%d] with bulk size [%d].",
                          self.number_of_lines, file_name, self.offset, self.bulk_size)
         start = time.perf_counter()
         io.skip_lines(file_name, self.source, self.offset)

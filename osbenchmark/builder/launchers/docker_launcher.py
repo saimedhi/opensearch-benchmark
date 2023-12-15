@@ -20,12 +20,13 @@ class DockerLauncher(Launcher):
                                      DockerLauncher.CONTAINER_WAIT_TIMEOUT_SECONDS, clock=clock)
 
     def start(self, host, node_configurations):
+        print("@@@@@@@@@@@ start DockerLauncher in builder/launchers/docker_launcher.py")
         nodes = []
         for node_configuration in node_configurations:
             node_name = node_configuration.node_name
             host_name = node_configuration.ip
             binary_path = node_configuration.binary_path
-            self.logger.info("Starting node [%s] in Docker.", node_name)
+            print("Starting node [%s] in Docker.", node_name)
             self._start_process(host, binary_path)
             node_telemetry = [
                 # Don't attach any telemetry devices for now but keep the infrastructure in place
@@ -64,9 +65,9 @@ class DockerLauncher(Launcher):
         return len(containers) > 0
 
     def stop(self, host, nodes):
-        self.logger.info("Shutting down [%d] nodes running in Docker on this host.", len(nodes))
+        print("Shutting down [%d] nodes running in Docker on this host.", len(nodes))
         for node in nodes:
-            self.logger.info("Stopping node [%s].", node.node_name)
+            print("Stopping node [%s].", node.node_name)
             if self.metrics_store:
                 telemetry.add_metadata_for_node(self.metrics_store, node.node_name, node.host_name)
             node.telemetry.detach_from_node(node, running=True)

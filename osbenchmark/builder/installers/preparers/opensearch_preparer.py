@@ -58,7 +58,7 @@ class OpenSearchPreparer(Preparer):
             self.path_manager.create_path(host, directory_to_create)
 
     def _extract_opensearch(self, host, node, binary):
-        self.logger.info("Unzipping %s to %s", binary, node.binary_path)
+        print("Unzipping %s to %s", binary, node.binary_path)
         self.executor.execute(host, f"tar -xzvf {binary} --directory {node.binary_path}")
 
     def _update_node_binary_path(self, node):
@@ -69,7 +69,7 @@ class OpenSearchPreparer(Preparer):
 
     def _delete_prebundled_config_files(self, host, node):
         config_path = os.path.join(node.binary_path, "config")
-        self.logger.info("Deleting pre-bundled OpenSearch configuration at [%s]", config_path)
+        print("Deleting pre-bundled OpenSearch configuration at [%s]", config_path)
         self.path_manager.delete_path(host, config_path)
 
     def get_config_vars(self, host, node, all_node_ips):

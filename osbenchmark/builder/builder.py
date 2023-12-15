@@ -331,18 +331,19 @@ class BuilderActor(actor.BenchmarkActor):
         self.externally_provisioned = False
 
     def receiveUnrecognizedMessage(self, msg, sender):
-        self.logger.info("BuilderActor#receiveMessage unrecognized(msg = [%s] sender = [%s])", str(type(msg)), str(sender))
+        print("BuilderActor#receiveMessage unrecognized(msg = [%s] sender = [%s])", str(type(msg)), str(sender))
 
     def receiveMsg_ChildActorExited(self, msg, sender):
         if self.is_current_status_expected(["cluster_stopping", "cluster_stopped"]):
-            self.logger.info("Child actor exited while engine is stopping or stopped: [%s]", msg)
+            print("Child actor exited while engine is stopping or stopped: [%s]", msg)
             return
         failmsg = "Child actor exited with [%s] while in status [%s]." % (msg, self.status)
         self.logger.error(failmsg)
         self.send(self.test_execution_orchestrator, actor.BenchmarkFailure(failmsg))
 
     def receiveMsg_PoisonMessage(self, msg, sender):
-        self.logger.info("BuilderActor#receiveMessage poison(msg = [%s] sender = [%s])", str(msg.poisonMessage), str(sender))
+        print("receiveMsg_StartEngine in receiveMsg_PoisonMessage")
+        print("BuilderActor#receiveMessage poison(msg = [%s] sender = [%s])", str(msg.poisonMessage), str(sender))
         # something went wrong with a child actor (or another actor with which we have communicated)
         if isinstance(msg.poisonMessage, StartEngine):
             failmsg = "Could not start benchmark candidate. Are Benchmark daemons on all targeted machines running?"
@@ -353,7 +354,8 @@ class BuilderActor(actor.BenchmarkActor):
 
     @actor.no_retry("builder")  # pylint: disable=no-value-for-parameter
     def receiveMsg_StartEngine(self, msg, sender):
-        self.logger.info("Received signal from test execution orchestrator to start engine.")
+        print("receiveMsg_StartEngine in builder/builder.py")
+        print("Received signal from test execution orchestrator to start engine.")
         self.test_execution_orchestrator = sender
         self.cfg = msg.cfg
         self.provision_config_instance, _ = load_provision_config(self.cfg, msg.external)
@@ -367,14 +369,14 @@ class BuilderActor(actor.BenchmarkActor):
 
         self.externally_provisioned = msg.external
         if self.externally_provisioned:
-            self.logger.info("Cluster will not be provisioned by Benchmark.")
+            print("Cluster will not be provisioned by Benchmark.")
             self.status = "nodes_started"
             self.received_responses = []
             self.on_all_nodes_started()
             self.status = "cluster_started"
         else:
             console.info("Preparing for test execution ...", flush=True)
-            self.logger.info("Cluster consisting of %s will be provisioned by Benchmark.", hosts)
+            print("Cluster consisting of %s will be provisioned by Benchmark.", hosts)
             msg.hosts = hosts
             # Initialize the children array to have the right size to
             # ensure waiting for all responses
@@ -442,6 +444,7 @@ class BuilderActor(actor.BenchmarkActor):
 
 @thespian.actors.requireCapability('coordinator')
 class Dispatcher(actor.BenchmarkActor):
+
     """This Actor receives a copy of the startmsg (with the computed hosts
        attached) and creates a NodeBuilderActor on each targeted
        remote host.  It uses Thespian SystemRegistration to get
@@ -461,6 +464,7 @@ class Dispatcher(actor.BenchmarkActor):
 
     @actor.no_retry("builder dispatcher")  # pylint: disable=no-value-for-parameter
     def receiveMsg_StartEngine(self, startmsg, sender):
+        print("@@@@@@@@@@receiveMsg_StartEngine")
         self.start_sender = sender
         self.pending = []
         self.remotes = defaultdict(list)
@@ -496,7 +500,7 @@ class Dispatcher(actor.BenchmarkActor):
                 "Remote Benchmark node [%s] has been shutdown prematurely." % convmsg.remoteAdminAddress))
         else:
             remote_ip = convmsg.remoteCapabilities.get('ip', None)
-            self.logger.info("Remote Benchmark node [%s] has started.", remote_ip)
+            print("Remote Benchmark node [%s] has started.", remote_ip)
 
             for eachmsg in self.remotes[remote_ip]:
                 self.pending.append((self.createActor(NodeBuilderActor,
@@ -523,7 +527,8 @@ class Dispatcher(actor.BenchmarkActor):
         self.send(self.start_sender, actor.BenchmarkFailure(msg.details))
 
     def receiveUnrecognizedMessage(self, msg, sender):
-        self.logger.info("builder.Dispatcher#receiveMessage unrecognized(msg = [%s] sender = [%s])", str(type(msg)), str(sender))
+        print("@@@@@@@@@@receiveUnrecognizedMessage")
+        print("builder.Dispatcher#receiveMessage unrecognized(msg = [%s] sender = [%s])", str(type(msg)), str(sender))
 
 
 class NodeBuilderActor(actor.BenchmarkActor):
@@ -538,12 +543,13 @@ class NodeBuilderActor(actor.BenchmarkActor):
         self.host = None
 
     def receiveMsg_StartNodes(self, msg, sender):
+        print("@@@@@@@@@@receiveMsg_StartNodes")
         try:
             self.host = msg.ip
             if msg.external:
-                self.logger.info("Connecting to externally provisioned nodes on [%s].", msg.ip)
+                print("Connecting to externally provisioned nodes on [%s].", msg.ip)
             else:
-                self.logger.info("Starting node(s) %s on [%s].", msg.node_ids, msg.ip)
+                print("Starting node(s) %s on [%s].", msg.node_ids, msg.ip)
 
             # Load node-specific configuration
             cfg = config.auto_load_local_config(msg.cfg, additional_sections=[
@@ -628,7 +634,9 @@ def load_provision_config(cfg, external):
 
 def create(cfg, metrics_store, node_ip, node_http_port, all_node_ips, all_node_ids, sources=False, distribution=False,
            external=False, docker=False):
+    print("@@@@@@@@@@create")
     test_execution_root_path = paths.test_execution_root(cfg)
+    print("@test_execution_root_path", test_execution_root_path)
     node_ids = cfg.opts("provisioning", "node.ids", mandatory=False)
     node_name_prefix = cfg.opts("provisioning", "node.name.prefix")
     provision_config_instance, plugins = load_provision_config(cfg, external)
@@ -680,15 +688,18 @@ class Builder:
         self.logger = logging.getLogger(__name__)
 
     def start_engine(self):
+        print("@@@@@@@@@@ Builder start_engine")
         binaries = self.supply()
         self.node_configs = []
         for p in self.provisioners:
             self.node_configs.append(p.prepare(binaries))
+        print("@launcher", launcher)
         self.nodes = self.launcher.start(self.node_configs)
         return self.nodes
 
     def reset_relative_time(self):
-        self.logger.info("Resetting relative time of system metrics store.")
+        print("@@@@@@@@@@ Builder reset_relative_time")
+        print("Resetting relative time of system metrics store.")
         self.metrics_store.reset_relative_time()
 
     def flush_metrics(self, refresh=False):
@@ -696,7 +707,8 @@ class Builder:
         self.metrics_store.flush(refresh=refresh)
 
     def stop_engine(self):
-        self.logger.info("Stopping nodes %s.", self.nodes)
+        print("@@@@@@@@@@ Builder stop_engine")
+        print("Stopping nodes %s.", self.nodes)
         self.launcher.stop(self.nodes, self.metrics_store)
         self.flush_metrics(refresh=True)
         try:
@@ -715,6 +727,7 @@ class Builder:
         self.node_configs = []
 
     def _current_test_execution(self):
+        print("@@@@@@@@@@ Builder _current_test_execution")
         test_execution_id = self.cfg.opts("system", "test_execution.id")
         return metrics.test_execution_store(self.cfg).find_by_test_execution_id(test_execution_id)
 

@@ -35,6 +35,7 @@ from osbenchmark.utils import io, opts, process
 
 
 class DockerLauncher:
+    print("@@@@@@@@@@@ DockerLauncher in builder/launcher.py")
     # May download a Docker image and that can take some time
     PROCESS_WAIT_TIMEOUT_SECONDS = 10 * 60
 
@@ -44,12 +45,13 @@ class DockerLauncher:
         self.logger = logging.getLogger(__name__)
 
     def start(self, node_configurations):
+        print("@@@@@@@@@@@ start DockerLauncher in builder/launcher.py")
         nodes = []
         for node_configuration in node_configurations:
             node_name = node_configuration.node_name
             host_name = node_configuration.ip
             binary_path = node_configuration.binary_path
-            self.logger.info("Starting node [%s] in Docker.", node_name)
+            print("Starting node [%s] in Docker.", node_name)
             self._start_process(binary_path)
             node_telemetry = [
                 # Don't attach any telemetry devices for now but keep the infrastructure in place
@@ -61,6 +63,7 @@ class DockerLauncher:
         return nodes
 
     def _start_process(self, binary_path):
+        print("@@@@@@@@@@@ start_process DockerLauncher in builder/launcher.py")
         compose_cmd = self._docker_compose(binary_path, "up -d")
 
         ret = process.run_subprocess_with_logging(compose_cmd)
@@ -76,10 +79,12 @@ class DockerLauncher:
         return "docker-compose -f {} {}".format(os.path.join(compose_config, "docker-compose.yml"), cmd)
 
     def _get_container_id(self, compose_config):
+        print("@@@@@@@@@@@ get_container_idDockerLauncher in builder/launcher.py")
         compose_ps_cmd = self._docker_compose(compose_config, "ps -q")
         return process.run_subprocess_with_output(compose_ps_cmd)[0]
 
     def _wait_for_healthy_running_container(self, container_id, timeout):
+        print("@@@@@@@@@@@ _wait_for_healthy_running_container DockerLauncher in builder/launcher.py")
         cmd = 'docker ps -a --filter "id={}" --filter "status=running" --filter "health=healthy" -q'.format(container_id)
         stop_watch = self.clock.stop_watch()
         stop_watch.start()
@@ -93,9 +98,10 @@ class DockerLauncher:
         raise exceptions.LaunchError(msg)
 
     def stop(self, nodes, metrics_store):
-        self.logger.info("Shutting down [%d] nodes running in Docker on this host.", len(nodes))
+        print("@@@@@@@@@@@ stop DockerLauncher in builder/launcher.py")
+        print("Shutting down [%d] nodes running in Docker on this host.", len(nodes))
         for node in nodes:
-            self.logger.info("Stopping node [%s].", node.node_name)
+            print("Stopping node [%s].", node.node_name)
             if metrics_store:
                 telemetry.add_metadata_for_node(metrics_store, node.node_name, node.host_name)
             node.telemetry.detach_from_node(node, running=True)
@@ -124,22 +130,26 @@ def wait_for_pidfile(pidfilename, timeout=60, clock=time.Clock):
 
 
 class ProcessLauncher:
+    print("@@@@@@@@@@@ ProcessLauncher in builder/launcher.py")
     """
     Launcher is responsible for starting and stopping the benchmark candidate.
     """
     PROCESS_WAIT_TIMEOUT_SECONDS = 90.0
 
     def __init__(self, cfg, clock=time.Clock):
+        print("@@@@@@@@@@@ __init__ ProcessLauncher in builder/launcher.py")
         self.cfg = cfg
         self._clock = clock
         self.logger = logging.getLogger(__name__)
         self.pass_env_vars = opts.csv_to_list(self.cfg.opts("system", "passenv", mandatory=False, default_value="PATH"))
 
     def start(self, node_configurations):
+        print("@@@@@@@@@@@ start ProcessLauncher in builder/launcher.py")
         node_count_on_host = len(node_configurations)
         return [self._start_node(node_configuration, node_count_on_host) for node_configuration in node_configurations]
 
     def _start_node(self, node_configuration, node_count_on_host):
+        print("@@@@@@@@@@@ start_node ProcessLauncher in builder/launcher.py")
         host_name = node_configuration.ip
         node_name = node_configuration.node_name
         binary_path = node_configuration.binary_path
@@ -149,10 +159,10 @@ class ProcessLauncher:
         java_major_version, java_home = java_resolver.java_home(node_configuration.provision_config_instance_runtime_jdks,
                                                                 self.cfg.opts("builder", "runtime.jdk"),
                                                                 node_configuration.provision_config_instance_provides_bundled_jdk)
-        self.logger.info("Java major version: %s", java_major_version)
-        self.logger.info("Java home: %s", java_home)
+        print("Java major version: %s", java_major_version)
+        print("Java home: %s", java_home)
 
-        self.logger.info("Starting node [%s].", node_name)
+        print("Starting node [%s].", node_name)
 
         enabled_devices = self.cfg.opts("telemetry", "devices")
         telemetry_params = self.cfg.opts("telemetry", "params")
@@ -165,20 +175,26 @@ class ProcessLauncher:
             telemetry.IndexSize(data_paths),
             telemetry.StartupTime(),
         ]
+        print("@node_telemetry", node_telemetry)
+
+        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
         t = telemetry.Telemetry(enabled_devices, devices=node_telemetry)
+        print("@telemetry.Telemetry", t)
         env = self._prepare_env(node_name, java_home, t)
+        print("@env", env)
         t.on_pre_node_start(node_name)
         node_pid = self._start_process(binary_path, env)
-        self.logger.info("Successfully started node [%s] with PID [%s].", node_name, node_pid)
+        print("Successfully started node [%s] with PID [%s].", node_name, node_pid)
         node = cluster.Node(node_pid, binary_path, host_name, node_name, t)
 
-        self.logger.info("Attaching telemetry devices to node [%s].", node_name)
+        print("Attaching telemetry devices to node [%s].", node_name)
         t.attach_to_node(node)
 
         return node
 
     def _prepare_env(self, node_name, java_home, t):
+        print("@@@@@@@@@@@ prep env ProcessLauncher in builder/launcher.py")
         env = {k: v for k, v in os.environ.items() if k in self.pass_env_vars}
         if java_home:
             self._set_env(env, "PATH", os.path.join(java_home, "bin"), separator=os.pathsep, prepend=True)
@@ -186,7 +202,7 @@ class ProcessLauncher:
             env["OPENSEARCH_JAVA_HOME"] = java_home
             # TODO remove this when ES <8.0 becomes unsupported by Benchmark
             env["JAVA_HOME"] = java_home
-            self.logger.info("JAVA HOME: %s", env["JAVA_HOME"])
+            print("JAVA HOME: %s", env["JAVA_HOME"])
         if not env.get("OPENSEARCH_JAVA_OPTS"):
             env["OPENSEARCH_JAVA_OPTS"] = "-XX:+ExitOnOutOfMemoryError"
 
@@ -198,6 +214,7 @@ class ProcessLauncher:
         return env
 
     def _set_env(self, env, k, v, separator=' ', prepend=False):
+        print("@@@@@@@@@@@ _set_env in builder/launcher.py")
         if v is not None:
             if k not in env:
                 env[k] = v
@@ -208,6 +225,7 @@ class ProcessLauncher:
 
     @staticmethod
     def _run_subprocess(command_line, env):
+        print("@@@@@@@@@@@ run_subprocess in builder/launcher.py")
         command_line_args = shlex.split(command_line)
 
         with subprocess.Popen(command_line_args,
@@ -222,6 +240,7 @@ class ProcessLauncher:
 
     @staticmethod
     def _start_process(binary_path, env):
+        print("@@@@@@@@@@@ start_process ProcessLauncher in builder/launcher.py")
         if os.name == "posix" and os.geteuid() == 0:
             raise exceptions.LaunchError("Cannot launch OpenSearch as root. Please run Benchmark as a non-root user.")
         os.chdir(binary_path)
@@ -236,7 +255,8 @@ class ProcessLauncher:
         return wait_for_pidfile(io.escape_path(os.path.join(".", "pid")))
 
     def stop(self, nodes, metrics_store):
-        self.logger.info("Shutting down [%d] nodes on this host.", len(nodes))
+        print("@@@@@@@@@@@ stop ProcessLauncher in builder/launcher.py")
+        print("Shutting down [%d] nodes on this host.", len(nodes))
         stopped_nodes = []
         for node in nodes:
             node_name = node.node_name
@@ -259,14 +279,14 @@ class ProcessLauncher:
                 except psutil.NoSuchProcess:
                     self.logger.warning("No process found with PID [%s] for node [%s].", opensearch.pid, node_name)
                 except psutil.TimeoutExpired:
-                    self.logger.info("kill -KILL node [%s]", node_name)
+                    print("kill -KILL node [%s]", node_name)
                     try:
                         # kill -9
                         opensearch.kill()
                         stopped_nodes.append(node)
                     except psutil.NoSuchProcess:
                         self.logger.warning("No process found with PID [%s] for node [%s].", opensearch.pid, node_name)
-                self.logger.info("Done shutting down node [%s] in [%.1f] s.", node_name, stop_watch.split_time())
+                print("Done shutting down node [%s] in [%.1f] s.", node_name, stop_watch.split_time())
 
                 node.telemetry.detach_from_node(node, running=False)
             # store system metrics in any case (telemetry devices may derive system metrics while the node is running)

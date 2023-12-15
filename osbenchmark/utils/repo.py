@@ -68,10 +68,10 @@ class BenchmarkRepository:
                 branch = versions.best_match(git.branches(self.repo_dir, remote=self.remote), distribution_version)
                 if branch:
                     # Allow uncommitted changes iff we do not have to change the branch
-                    self.logger.info(
+                    print(
                         "Checking out [%s] in [%s] for distribution version [%s].", branch, self.repo_dir, distribution_version)
                     git.checkout(self.repo_dir, branch=branch)
-                    self.logger.info("Rebasing on [%s] in [%s] for distribution version [%s].", branch, self.repo_dir, distribution_version)
+                    print("Rebasing on [%s] in [%s] for distribution version [%s].", branch, self.repo_dir, distribution_version)
                     try:
                         git.rebase(self.repo_dir, branch=branch)
                         self.revision = git.head_revision(self.repo_dir)
@@ -88,16 +88,16 @@ class BenchmarkRepository:
             branch = versions.best_match(git.branches(self.repo_dir, remote=False), distribution_version)
             if branch:
                 if git.current_branch(self.repo_dir) != branch:
-                    self.logger.info("Checking out [%s] in [%s] for distribution version [%s].",
+                    print("Checking out [%s] in [%s] for distribution version [%s].",
                                      branch, self.repo_dir, distribution_version)
                     git.checkout(self.repo_dir, branch=branch)
                     self.revision = git.head_revision(self.repo_dir)
             else:
-                self.logger.info("No local branch found for distribution version [%s] in [%s]. Checking tags.",
+                print("No local branch found for distribution version [%s] in [%s]. Checking tags.",
                                  distribution_version, self.repo_dir)
                 tag = self._find_matching_tag(distribution_version)
                 if tag:
-                    self.logger.info("Checking out tag [%s] in [%s] for distribution version [%s].",
+                    print("Checking out tag [%s] in [%s] for distribution version [%s].",
                                      tag, self.repo_dir, distribution_version)
                     git.checkout(self.repo_dir, branch=tag)
                     self.revision = git.head_revision(self.repo_dir)
@@ -118,7 +118,7 @@ class BenchmarkRepository:
         return None
 
     def checkout(self, revision):
-        self.logger.info("Checking out revision [%s] in [%s].", revision, self.repo_dir)
+        print("Checking out revision [%s] in [%s].", revision, self.repo_dir)
         git.checkout(self.repo_dir, revision)
 
     def set_provision_configs_dir(self, repo_revision, distribution_version, cfg):
@@ -133,7 +133,7 @@ class BenchmarkRepository:
         return cfg
 
     def _use_default_provision_configs_dir(self, distribution_version, cfg):
-        self.logger.info("Using default-provision-config directory within repository")
+        print("Using default-provision-config directory within repository")
         root_dir = cfg.opts("node", "benchmark.root")
         provision_configs_path = os.path.join(root_dir, "resources/provision_configs")
 
@@ -146,7 +146,7 @@ class BenchmarkRepository:
         # Branches have been moved into resources/provision_configs
         branches = [b for b in os.listdir(pc_path) if os.path.isdir(os.path.join(pc_path, b)) and b != "main"]
         branches.sort(key=lambda b: list(map(int, b.split('.'))), reverse=True)
-        self.logger.info("branches: %s", branches)
+        print("branches: %s", branches)
         convert = lambda s: list(map(int, s.split('.')))
         if distribution_version is not None:
             # Return a branch that is less than or equal to the distribution version

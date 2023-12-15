@@ -91,7 +91,7 @@ class ComponentLoader:
         :return: The root module.
         """
         component_name = io.basename(self.root_path)
-        self.logger.info("Loading component [%s] from [%s]", component_name, self.root_path)
+        print("Loading component [%s] from [%s]", component_name, self.root_path)
         module_dirs = []
         # search all paths within this directory for modules but exclude all directories starting with "_"
         if self.recurse:

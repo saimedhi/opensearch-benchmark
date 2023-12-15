@@ -1085,7 +1085,7 @@ class ClusterHealth(Runner):
             "cluster-status": cluster_status,
             "relocating-shards": relocating_shards
         }
-        self.logger.info("%s: expected status=[%s], actual status=[%s], relocating shards=[%d], success=[%s].",
+        print("%s: expected status=[%s], actual status=[%s], relocating shards=[%d], success=[%s].",
                          repr(self), expected_cluster_status, cluster_status, relocating_shards, result["success"])
         return result
 
@@ -1169,7 +1169,7 @@ class DeleteIndex(Runner):
                 await opensearch.indices.delete(index=index_name, params=request_params)
                 ops += 1
             elif only_if_exists and await opensearch.indices.exists(index=index_name):
-                self.logger.info("Index [%s] already exists. Deleting it.", index_name)
+                print("Index [%s] already exists. Deleting it.", index_name)
                 await opensearch.indices.delete(index=index_name, params=request_params)
                 ops += 1
 
@@ -1196,7 +1196,7 @@ class DeleteDataStream(Runner):
                 await opensearch.indices.delete_data_stream(data_stream, ignore=[404], params=request_params)
                 ops += 1
             elif only_if_exists and await opensearch.indices.exists(index=data_stream):
-                self.logger.info("Data stream [%s] already exists. Deleting it.", data_stream)
+                print("Data stream [%s] already exists. Deleting it.", data_stream)
                 await opensearch.indices.delete_data_stream(data_stream, params=request_params)
                 ops += 1
 
@@ -1247,7 +1247,7 @@ class DeleteComponentTemplate(Runner):
                 await opensearch.cluster.delete_component_template(name=template_name, params=request_params, ignore=[404])
                 ops_count += 1
             elif only_if_exists and await _exists(template_name):
-                self.logger.info("Component Index template [%s] already exists. Deleting it.", template_name)
+                print("Component Index template [%s] already exists. Deleting it.", template_name)
                 await opensearch.cluster.delete_component_template(name=template_name, params=request_params)
                 ops_count += 1
         return {
@@ -1290,7 +1290,7 @@ class DeleteComposableTemplate(Runner):
                 await opensearch.indices.delete_index_template(name=template_name, params=request_params, ignore=[404])
                 ops_count += 1
             elif only_if_exists and await opensearch.indices.exists_template(template_name):
-                self.logger.info("Composable Index template [%s] already exists. Deleting it.", template_name)
+                print("Composable Index template [%s] already exists. Deleting it.", template_name)
                 await opensearch.indices.delete_index_template(name=template_name, params=request_params)
                 ops_count += 1
             # ensure that we do not provide an empty index pattern by accident
@@ -1338,7 +1338,7 @@ class DeleteIndexTemplate(Runner):
                 await opensearch.indices.delete_template(name=template_name, params=request_params)
                 ops_count += 1
             elif only_if_exists and await opensearch.indices.exists_template(template_name):
-                self.logger.info("Index template [%s] already exists. Deleting it.", template_name)
+                print("Index template [%s] already exists. Deleting it.", template_name)
                 await opensearch.indices.delete_template(name=template_name, params=request_params)
                 ops_count += 1
             # ensure that we do not provide an empty index pattern by accident
@@ -1400,8 +1400,8 @@ class ShrinkIndex(Runner):
 
         for source_index in source_indices:
             shrink_node = random.choice(node_names)
-            self.logger.info("Using [%s] as shrink node.", shrink_node)
-            self.logger.info("Preparing [%s] for shrinking.", source_index)
+            print("Using [%s] as shrink node.", shrink_node)
+            print("Preparing [%s] for shrinking.", source_index)
 
             # prepare index for shrinking
             await opensearch.indices.put_settings(index=source_index,
@@ -1413,9 +1413,9 @@ class ShrinkIndex(Runner):
                                           },
                                           preserve_existing=True)
 
-            self.logger.info("Waiting for relocation to finish for index [%s] ...", source_index)
+            print("Waiting for relocation to finish for index [%s] ...", source_index)
             await self._wait_for(opensearch, source_index, f"shard relocation for index [{source_index}]")
-            self.logger.info("Shrinking [%s] to [%s].", source_index, target_index)
+            print("Shrinking [%s] to [%s].", source_index, target_index)
             if "settings" not in target_body:
                 target_body["settings"] = {}
             target_body["settings"]["index.routing.allocation.require._name"] = None
@@ -1425,9 +1425,9 @@ class ShrinkIndex(Runner):
             final_target_index = target_index if len(index_suffix) == 0 else target_index+index_suffix
             await opensearch.indices.shrink(index=source_index, target=final_target_index, body=target_body)
 
-            self.logger.info("Waiting for shrink to finish for index [%s] ...", source_index)
+            print("Waiting for shrink to finish for index [%s] ...", source_index)
             await self._wait_for(opensearch, final_target_index, f"shrink for index [{final_target_index}]")
-            self.logger.info("Shrinking [%s] to [%s] has finished.", source_index, final_target_index)
+            print("Shrinking [%s] to [%s] has finished.", source_index, final_target_index)
         # ops_count is not really important for this operation...
         return {
             "weight": len(source_indices),
@@ -2116,7 +2116,7 @@ class Retry(Runner, Delegator):
                         self.logger.debug("%s has returned successfully", repr(self.delegate))
                         return return_value
                     else:
-                        self.logger.info("[%s] has returned with an error: %s. Retrying in [%.2f] seconds.",
+                        print("[%s] has returned with an error: %s. Retrying in [%.2f] seconds.",
                                          repr(self.delegate), return_value, sleep_time)
                         await asyncio.sleep(sleep_time)
                 else:
@@ -2130,7 +2130,7 @@ class Retry(Runner, Delegator):
                 if last_attempt or not retry_on_timeout:
                     raise e
                 elif e.status_code == 408:
-                    self.logger.info("[%s] has timed out. Retrying in [%.2f] seconds.", repr(self.delegate), sleep_time)
+                    print("[%s] has timed out. Retrying in [%.2f] seconds.", repr(self.delegate), sleep_time)
                     await asyncio.sleep(sleep_time)
                 else:
                     raise e

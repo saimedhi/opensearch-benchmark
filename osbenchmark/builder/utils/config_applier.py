@@ -32,13 +32,13 @@ class ConfigApplier:
                 mounts[target_file] = os.path.join("/usr/share/opensearch", relative_root, name)
 
                 if io.is_plain_text(source_file):
-                    self.logger.info("Reading config template file [%s] and writing to [%s].", source_file, target_file)
+                    print("Reading config template file [%s] and writing to [%s].", source_file, target_file)
                     with open(target_file, mode="a", encoding="utf-8") as f:
                         f.write(self.template_renderer.render_template_file(root, config_vars, source_file))
 
                     self.executor.execute(host, f"cp {target_file} {target_file}")
                 else:
-                    self.logger.info("Treating [%s] as binary and copying as is to [%s].", source_file, target_file)
+                    print("Treating [%s] as binary and copying as is to [%s].", source_file, target_file)
                     self.executor.execute(host, f"cp {source_file} {target_file}")
 
         return mounts

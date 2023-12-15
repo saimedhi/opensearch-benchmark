@@ -189,13 +189,16 @@ def load_workload(cfg):
     :param cfg: The config object. It contains the name of the workload to load.
     :return: The loaded workload.
     """
+    print("@@@@@@loading work load")
     repo = workload_repo(cfg)
+    print("@repo", repo)
     return _load_single_workload(cfg, repo, repo.workload_name)
 
 
 def _load_single_workload(cfg, workload_repository, workload_name):
     try:
         workload_dir = workload_repository.workload_dir(workload_name)
+        print("@workload_dir", workload_dir)
         reader = WorkloadFileReader(cfg)
         current_workload = reader.read(workload_name, workload_repository.workload_file(workload_name), workload_dir)
         tpr = WorkloadProcessorRegistry(cfg)
@@ -312,10 +315,12 @@ def data_dir(cfg, workload_name, corpus_name):
 
 class GitWorkloadRepository:
     def __init__(self, cfg, fetch, update, repo_class=repo.BenchmarkRepository):
+        print("PRINT_GitWorkloadRepository.................")
         # current workload name (if any)
         self.workload_name = cfg.opts("workload", "workload.name", mandatory=False)
         distribution_version = cfg.opts("builder", "distribution.version", mandatory=False)
         repo_name = cfg.opts("workload", "repository.name")
+        print("repo_name.................", repo_name)
         repo_revision = cfg.opts("workload", "repository.revision", mandatory=False)
         offline = cfg.opts("system", "offline.mode")
         remote_url = cfg.opts("workloads", "%s.url" % repo_name, mandatory=False)
@@ -481,15 +486,15 @@ class Downloader:
             io.ensure_dir(os.path.dirname(target_path))
             if size_in_bytes:
                 size_in_mb = round(convert.bytes_to_mb(size_in_bytes))
-                self.logger.info("Downloading data from [%s] (%s MB) to [%s].", data_url, size_in_mb, target_path)
+                print("Downloading data from [%s] (%s MB) to [%s].", data_url, size_in_mb, target_path)
             else:
-                self.logger.info("Downloading data from [%s] to [%s].", data_url, target_path)
+                print("Downloading data from [%s] to [%s].", data_url, target_path)
 
             # we want to have a bit more accurate download progress as these files are typically very large
             progress = net.Progress("[INFO] Downloading workload data", accuracy=1)
             net.download(data_url, target_path, size_in_bytes, progress_indicator=progress)
             progress.finish()
-            self.logger.info("Downloaded data from [%s] to [%s].", data_url, target_path)
+            print("Downloaded data from [%s] to [%s].", data_url, target_path)
         except urllib.error.HTTPError as e:
             if e.code == 404 and self.test_mode:
                 raise exceptions.DataError("This workload does not support test mode. Ask the workload author to add it or"
@@ -840,11 +845,11 @@ class TaskFilterWorkloadProcessor(WorkloadProcessor):
                         if self._filter_out_match(leaf_task):
                             leafs_to_remove.append(leaf_task)
                     for leaf_task in leafs_to_remove:
-                        self.logger.info("Removing sub-task [%s] from test_procedure [%s] due to task filter.",
+                        print("Removing sub-task [%s] from test_procedure [%s] due to task filter.",
                                          leaf_task, test_procedure)
                         task.remove_task(leaf_task)
             for task in tasks_to_remove:
-                self.logger.info("Removing task [%s] from test_procedure [%s] due to task filter.", task, test_procedure)
+                print("Removing task [%s] from test_procedure [%s] due to task filter.", task, test_procedure)
                 test_procedure.remove_task(task)
 
         return workload
@@ -858,7 +863,7 @@ class TestModeWorkloadProcessor(WorkloadProcessor):
     def on_after_load_workload(self, workload):
         if not self.test_mode_enabled:
             return workload
-        self.logger.info("Preparing workload [%s] for test mode.", str(workload))
+        print("Preparing workload [%s] for test mode.", str(workload))
         for corpus in workload.corpora:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug("Reducing corpus size to 1000 documents for [%s]", corpus.name)
@@ -970,7 +975,7 @@ class WorkloadFileReader:
         :return: A corresponding workload instance if the workload file is valid.
         """
 
-        self.logger.info("Reading workload specification file [%s].", workload_spec_file)
+        print("Reading workload specification file [%s].", workload_spec_file)
         # render the workload to a temporary file instead of dumping it into the logs. It is easier to check for error messages
         # involving lines numbers and it also does not bloat Benchmark's log file so much.
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
@@ -980,7 +985,7 @@ class WorkloadFileReader:
                 complete_workload_params=self.complete_workload_params)
             with open(tmp.name, "wt", encoding="utf-8") as f:
                 f.write(rendered)
-            self.logger.info("Final rendered workload for '%s' has been written to '%s'.", workload_spec_file, tmp.name)
+            print("Final rendered workload for '%s' has been written to '%s'.", workload_spec_file, tmp.name)
             workload_spec = json.loads(rendered)
         except jinja2.exceptions.TemplateNotFound:
             self.logger.exception("Could not load [%s]", workload_spec_file)
@@ -1212,7 +1217,7 @@ class WorkloadSpecificationReader:
         return workload.IndexTemplate(name, index_pattern, template_content, delete_matching_indices)
 
     def _load_template(self, contents, description):
-        self.logger.info("Loading template [%s].", description)
+        print("Loading template [%s].", description)
         register_all_params_in_workload(contents, self.complete_workload_params)
         try:
             rendered = render_template(template_source=contents,
@@ -1527,7 +1532,7 @@ class WorkloadSpecificationReader:
                 params["include-in-results_publishing"] = not op.admin_op
             self.logger.debug("Using built-in operation type [%s] for operation [%s].", op_type_name, op_name)
         except KeyError:
-            self.logger.info("Using user-provided operation type [%s] for operation [%s].", op_type_name, op_name)
+            print("Using user-provided operation type [%s] for operation [%s].", op_type_name, op_name)
 
         try:
             return workload.Operation(name=op_name, meta_data=meta_data,

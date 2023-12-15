@@ -22,18 +22,18 @@ class JavaHomeResolver:
         if is_runtime_jdk_bundled:
             return self._handle_bundled_jdk(host, allowed_runtime_jdks)
         else:
-            self.logger.info("Allowed JDK versions are %s.", allowed_runtime_jdks)
+            print("Allowed JDK versions are %s.", allowed_runtime_jdks)
             return self._detect_jdk(host, allowed_runtime_jdks)
 
     def _handle_bundled_jdk(self, host, allowed_runtime_jdks):
-        self.logger.info("Using JDK bundled with OpenSearch.")
+        print("Using JDK bundled with OpenSearch.")
         os_check = self.executor.execute(host, "uname", output=True)[0]
         if os_check == "Windows":
             raise SystemSetupError("OpenSearch doesn't provide release artifacts for Windows currently.")
         if os_check == "Darwin":
             # OpenSearch does not provide a Darwin version of OpenSearch or a MacOS JDK version
-            self.logger.info("Using JDK set from JAVA_HOME because OS is MacOS (Darwin).")
-            self.logger.info(
+            print("Using JDK set from JAVA_HOME because OS is MacOS (Darwin).")
+            print(
                 "NOTICE: OpenSearch doesn't provide jdk bundled release artifacts for MacOS (Darwin) currently. "
                 "Please set JAVA_HOME to JDK 11 or JDK 8 and set the runtime.jdk.bundled to true in the specified "
                 "provision config instance file")
@@ -44,5 +44,5 @@ class JavaHomeResolver:
 
     def _detect_jdk(self, host, jdks):
         major, java_home = self.jdk_resolver.resolve_jdk_path(host, jdks)
-        self.logger.info("Detected JDK with major version [%s] in [%s].", major, java_home)
+        print("Detected JDK with major version [%s] in [%s].", major, java_home)
         return major, java_home

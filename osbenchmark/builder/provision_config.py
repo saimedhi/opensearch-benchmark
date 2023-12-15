@@ -195,7 +195,7 @@ class ProvisionConfigInstanceLoader:
 
         # it's possible that some provision_config_instances don't have a config base, e.g. mixins which only override variables
         if len(config_paths) == 0:
-            self.logger.info("ProvisionConfigInstance [%s] does not define any config paths. Assuming that it is used as a mixin.", name)
+            print("ProvisionConfigInstance [%s] does not define any config paths. Assuming that it is used as a mixin.", name)
         variables = self._copy_section(config, "variables", {})
         # add all provision_config_instance params here to override any defaults
         if provision_config_instance_params:
@@ -355,9 +355,9 @@ class PluginLoader:
 
     def load_plugin(self, name, config_names, plugin_params=None):
         if config_names is not None:
-            self.logger.info("Loading plugin [%s] with configuration(s) [%s].", name, config_names)
+            print("Loading plugin [%s] with configuration(s) [%s].", name, config_names)
         else:
-            self.logger.info("Loading plugin [%s] with default configuration.", name)
+            print("Loading plugin [%s] with default configuration.", name)
 
         root_path = self._plugin_root_path(name)
         # used to determine whether this is a core plugin
@@ -375,7 +375,7 @@ class PluginLoader:
                     return core_plugin
                 # If we just have a plugin name then we assume that this is a community plugin and the user has specified a download URL
                 else:
-                    self.logger.info("The plugin [%s] is neither a configured nor an official plugin. Assuming that this is a community "
+                    print("The plugin [%s] is neither a configured nor an official plugin. Assuming that this is a community "
                                      "plugin not requiring any configuration and you have set a proper download URL.", name)
                     return PluginDescriptor(name, variables=plugin_params)
         else:
@@ -504,7 +504,7 @@ class BootstrapHookHandler:
             raise exceptions.SystemSetupError(msg)
 
     def register(self, phase, hook):
-        self.logger.info("Registering bootstrap hook [%s] for phase [%s] in component [%s]", hook.__name__, phase, self.component.name)
+        print("Registering bootstrap hook [%s] for phase [%s] in component [%s]", hook.__name__, phase, self.component.name)
         if not BootstrapPhase.valid(phase):
             raise exceptions.SystemSetupError("Unknown bootstrap phase [{}]. Valid phases are: {}.".format(phase, BootstrapPhase.names()))
         if phase not in self.hooks:
@@ -513,9 +513,9 @@ class BootstrapHookHandler:
 
     def invoke(self, phase, **kwargs):
         if phase in self.hooks:
-            self.logger.info("Invoking phase [%s] for component [%s] in config [%s]", phase, self.component.name, self.component.config)
+            print("Invoking phase [%s] for component [%s] in config [%s]", phase, self.component.name, self.component.config)
             for hook in self.hooks[phase]:
-                self.logger.info("Invoking bootstrap hook [%s].", hook.__name__)
+                print("Invoking bootstrap hook [%s].", hook.__name__)
                 # hooks should only take keyword arguments to be forwards compatible with Benchmark!
                 hook(config_names=self.component.config, **kwargs)
         else:

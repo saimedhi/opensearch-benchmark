@@ -37,7 +37,6 @@ from osbenchmark.utils import io, sysstats, console, opts, process
 from osbenchmark.utils.versions import components
 
 def list_telemetry():
-    console.println("PRINT97.6+++++++++++++++++++++++++++")
     console.println("Available telemetry devices:\n")
     devices = [[device.command, device.human_name, device.help] for device in [JitCompiler, Gc, FlightRecorder,
                                                                                Heapdump, NodeStats, RecoveryStats,
@@ -50,7 +49,7 @@ def list_telemetry():
 
 class Telemetry:
     def __init__(self, enabled_devices=None, devices=None):
-        console.println("PRINT97.7+++++++++++++++++++++++++++")
+        console.println("Telemetry class initialized")
         if devices is None:
             devices = []
         if enabled_devices is None:
@@ -69,47 +68,43 @@ class Telemetry:
         return opts
 
     def on_pre_node_start(self, node_name):
-        console.println("PRINT97.9+++++++++++++++++++++++++++")
+        print("@ pre node started on telemetry devices")
         for device in self.devices:
             if self._enabled(device):
                 device.on_pre_node_start(node_name)
 
     def attach_to_node(self, node):
-        console.println("PRINT97.10+++++++++++++++++++++++++++")
+        print("@ node attached ")
         for device in self.devices:
             if self._enabled(device):
                 device.attach_to_node(node)
 
     def detach_from_node(self, node, running):
-        console.println("PRINT97.11+++++++++++++++++++++++++++")
+        print("@ node detached ")
         for device in self.devices:
             if self._enabled(device):
                 device.detach_from_node(node, running)
 
     def on_benchmark_start(self):
-        console.println("PRINT97.1+++++++++++++++++++++++++++")
-        console.println("self.devices", self.devices)
-        console.println("length of self.devices", len(self.devices))
         for device in self.devices:
-            console.println("device", device)
             if self._enabled(device):
                 console.println("device", device)
+                print("@ benchmark started")
                 device.on_benchmark_start()
 
     def on_benchmark_stop(self):
         for device in self.devices:
-            console.println("PRINT97.2+++++++++++++++++++++++++++")
             if self._enabled(device):
+                print("@ benchmark stopped")
                 device.on_benchmark_stop()
 
     def store_system_metrics(self, node, metrics_store):
-        console.println("PRINT97.12+++++++++++++++++++++++++++")
         for device in self.devices:
             if self._enabled(device):
+                print("@ storing system metrics ")
                 device.store_system_metrics(node, metrics_store)
 
     def _enabled(self, device):
-        console.println("PRINT97.13+++++++++++++++++++++++++++")
         return device.internal or device.command in self.enabled_devices
 
 
@@ -125,11 +120,9 @@ class TelemetryDevice:
         self.logger = logging.getLogger(__name__)
 
     def instrument_java_opts(self):
-        console.println("PRINT97.15+++++++++++++++++++++++++++")
         return {}
 
     def on_pre_node_start(self, node_name):
-        console.println("PRINT97.16+++++++++++++++++++++++++++")
         pass
 
     def attach_to_node(self, node):
@@ -145,7 +138,6 @@ class TelemetryDevice:
         pass
 
     def on_benchmark_stop(self):
-        console.println("PRINT97.4+++++++++++++++++++++++++++")
         pass
 
     def store_system_metrics(self, node, metrics_store):
@@ -153,7 +145,6 @@ class TelemetryDevice:
         pass
 
     def __getstate__(self):
-        console.println("PRINT97.20+++++++++++++++++++++++++++")
         state = self.__dict__.copy()
         del state["logger"]
         return state
@@ -226,7 +217,7 @@ class FlightRecorder(TelemetryDevice):
 
         java_opts = self.java_opts(log_file)
 
-        self.logger.info("jfr: Adding JVM arguments: [%s].", java_opts)
+        print("jfr: Adding JVM arguments: [%s].", java_opts)
         return java_opts
 
     def java_opts(self, log_file):
@@ -242,17 +233,17 @@ class FlightRecorder(TelemetryDevice):
             java_opts.append("-XX:FlightRecorderOptions=disk=true,maxage=0s,maxsize=0,dumponexit=true,dumponexitpath={}".format(log_file))
             jfr_cmd = "-XX:StartFlightRecording=defaultrecording=true"
             if recording_template:
-                self.logger.info("jfr: Using recording template [%s].", recording_template)
+                print("jfr: Using recording template [%s].", recording_template)
                 jfr_cmd += ",settings={}".format(recording_template)
             else:
-                self.logger.info("jfr: Using default recording template.")
+                print("jfr: Using default recording template.")
         else:
             jfr_cmd += "-XX:StartFlightRecording=maxsize=0,maxage=0s,disk=true,dumponexit=true,filename={}".format(log_file)
             if recording_template:
-                self.logger.info("jfr: Using recording template [%s].", recording_template)
+                print("jfr: Using recording template [%s].", recording_template)
                 jfr_cmd += ",settings={}".format(recording_template)
             else:
-                self.logger.info("jfr: Using default recording template.")
+                print("jfr: Using default recording template.")
         java_opts.append(jfr_cmd)
         return java_opts
 
@@ -475,7 +466,7 @@ class CcrStatsRecorder:
                 if stats["status"] == "SYNCING":
                     self.record_stats_per_index(index, stats)
                 else:
-                    self.logger.info("CCR Status is not syncing. Ignoring for now!")
+                    print("CCR Status is not syncing. Ignoring for now!")
             except opensearchpy.TransportError:
                 msg = "A transport error occurred while collecting CCR stats for remote cluster: {}".format(self.cluster_name)
                 self.logger.exception(msg)
@@ -909,7 +900,7 @@ class TransformStatsRecorder:
         self.transforms = transforms
         self.logger = logging.getLogger(__name__)
 
-        self.logger.info("transform stats recorder")
+        print("transform stats recorder")
 
     def __str__(self):
         return "transform stats"
@@ -1137,7 +1128,7 @@ class SearchableSnapshotsStatsRecorder:
             stats = self.client.transport.perform_request("GET", stats_api_endpoint, params={"level": level})
         except opensearchpy.NotFoundError as e:
             if "No searchable snapshots indices found" in e.info.get("error").get("reason"):
-                self.logger.info(
+                print(
                     "Unable to find valid indices while collecting searchable snapshots stats "
                     "on cluster [%s]", self.cluster_name)
                 # allow collection, indices might be mounted later on
@@ -1199,12 +1190,15 @@ class StartupTime(InternalTelemetryDevice):
         self.timer = stopwatch()
 
     def on_pre_node_start(self, node_name):
+        print("on prenode start timer is started")
         self.timer.start()
 
     def attach_to_node(self, node):
+        print("on node  attached to telemetry device timer stops")
         self.timer.stop()
 
     def store_system_metrics(self, node, metrics_store):
+        print("metrics_store.put_value_node_level(node.node_name, node_startup_time, self.timer.total_time")
         metrics_store.put_value_node_level(node.node_name, "node_startup_time", self.timer.total_time(), "s")
 
 
@@ -1225,7 +1219,7 @@ class DiskIo(InternalTelemetryDevice):
         if process_start:
             self.read_bytes = process_start.read_bytes
             self.write_bytes = process_start.write_bytes
-            self.logger.info("Using more accurate process-based I/O counters.")
+            print("Using more accurate process-based I/O counters.")
         else:
             # noinspection PyBroadException
             try:
@@ -1252,7 +1246,7 @@ class DiskIo(InternalTelemetryDevice):
                 else:
                     disk_end = sysstats.disk_io_counters()
                     if self.node_count_on_host > 1:
-                        self.logger.info("There are [%d] nodes on this host and Benchmark fell back to disk I/O counters. "
+                        print("There are [%d] nodes on this host and Benchmark fell back to disk I/O counters. "
                                          "Attributing [1/%d] of total I/O to [%s].",
                                          self.node_count_on_host, self.node_count_on_host, node.node_name)
 
@@ -1428,7 +1422,7 @@ class JvmStatsSummary(InternalTelemetryDevice):
 
     def on_benchmark_start(self):
         console.println("PRINT97.1i+++++++++++++++++++++++++++")
-        self.logger.info("JvmStatsSummary on benchmark start")
+        print("JvmStatsSummary on benchmark start")
         self.jvm_stats_per_node = self.jvm_stats()
 
     def on_benchmark_stop(self):
@@ -1534,13 +1528,15 @@ class IndexStats(InternalTelemetryDevice):
 
     def on_benchmark_stop(self):
         console.println("PRINT97.3j+++++++++++++++++++++++++++")
-        self.logger.info("Gathering indices stats for all primaries on benchmark stop.")
+        print("Gathering indices stats for all primaries on benchmark stop.")
         index_stats = self.index_stats()
+        console.println("PRINT_INDEX_STATS++++++++++++++++++++++++++", index_stats)
         # import json
         # self.logger.debug("Returned indices stats:\n%s", json.dumps(index_stats, indent=2))
         if "_all" not in index_stats or "primaries" not in index_stats["_all"]:
             return
         p = index_stats["_all"]["primaries"]
+        console.println("PRINT_p++++++++++++++++++++++++++", p)
         # actually this is add_count
         self.add_metrics(self.extract_value(p, ["segments", "count"]), "segments_count")
         self.add_metrics(self.extract_value(p, ["segments", "memory_in_bytes"]), "segments_memory_in_bytes", "byte")

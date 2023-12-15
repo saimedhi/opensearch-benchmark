@@ -114,18 +114,23 @@ class StopWatch:
         self._stop = None
 
     def start(self):
+        print("@ StopWatch started")
         self._start = self._now()
 
     def stop(self):
+        print("@ StopWatch ended")
         self._stop = self._now()
 
     def split_time(self):
+        print("@ StopWatch split time start to now time")
         return self._interval(self._start, self._now())
 
     def total_time(self):
+        print("@ StopWatch total time")
         return self._interval(self._start, self._stop)
 
     def _interval(self, t0, t1):
+        print("@ StopWatch time interval")
         if t0 is None:
             raise RuntimeError("start time is None")
         if t1 is None:

@@ -54,7 +54,7 @@ class DockerInstaller(Installer):
 
         mounts = self._prepare_mounts(host, node)
         docker_cfg = self._render_template_from_docker_file(self._get_docker_vars(node, mounts))
-        self.logger.info("Installing Docker container with configuration:\n%s", docker_cfg)
+        print("Installing Docker container with configuration:\n%s", docker_cfg)
 
         docker_compose_file = os.path.join(node.binary_path, "docker-compose.yml")
         with open(docker_compose_file, mode="wt", encoding="utf-8") as f:

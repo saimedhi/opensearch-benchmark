@@ -29,7 +29,7 @@ class SourceBinaryBuilder(BinaryBuilder):
         _, jdk_path = self.jdk_resolver.resolve_jdk_path(host, self.build_jdk_version)
         self.executor.execute(host, f"export JAVA_HOME={jdk_path}")
 
-        self.logger.info("Running build command [%s]", build_command)
+        print("Running build command [%s]", build_command)
         try:
             self.executor.execute(host, f"{source_directory}/{build_command} > {log_file} 2>&1")
         except ExecutorError:

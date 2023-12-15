@@ -283,7 +283,7 @@ class CompositeSupplier:
     def __init__(self, suppliers):
         self.suppliers = suppliers
         self.logger = logging.getLogger(__name__)
-        self.logger.info("Suppliers: %s", self.suppliers)
+        print("Suppliers: %s", self.suppliers)
 
     def __call__(self, *args, **kwargs):
         binaries = {}
@@ -367,7 +367,7 @@ class CachedSourceSupplier:
 
     def add(self, binaries):
         if self.cached:
-            self.logger.info("Using cached artifact in [%s]", self.cached_path)
+            print("Using cached artifact in [%s]", self.cached_path)
             binaries[self.file_resolver.artifact_key] = self.file_resolver.to_artifact_path(self.cached_path)
         else:
             self.source_supplier.add(binaries)
@@ -378,12 +378,12 @@ class CachedSourceSupplier:
                 try:
                     io.ensure_dir(io.dirname(self.cached_path))
                     shutil.copy(original_path, self.cached_path)
-                    self.logger.info("Caching artifact in [%s]", self.cached_path)
+                    print("Caching artifact in [%s]", self.cached_path)
                     binaries[self.file_resolver.artifact_key] = self.file_resolver.to_artifact_path(self.cached_path)
                 except OSError:
                     self.logger.exception("Not caching [%s].", original_path)
             else:
-                self.logger.info("Not caching [%s] (no revision info).", original_path)
+                print("Not caching [%s] (no revision info).", original_path)
 
 
 class OpenSearchSourceSupplier:
@@ -531,20 +531,20 @@ class OpenSearchDistributionSupplier:
         io.ensure_dir(self.distributions_root)
         download_url = self.repo.download_url
         distribution_path = os.path.join(self.distributions_root, self.repo.file_name)
-        self.logger.info("Resolved download URL [%s] for version [%s]", download_url, self.version)
+        print("Resolved download URL [%s] for version [%s]", download_url, self.version)
         if not os.path.isfile(distribution_path) or not self.repo.cache:
             try:
-                self.logger.info("Starting download of OpenSearch [%s]", self.version)
+                print("Starting download of OpenSearch [%s]", self.version)
                 progress = net.Progress("[INFO] Downloading OpenSearch %s" % self.version)
                 net.download(download_url, distribution_path, progress_indicator=progress)
                 progress.finish()
-                self.logger.info("Successfully downloaded OpenSearch [%s].", self.version)
+                print("Successfully downloaded OpenSearch [%s].", self.version)
             except urllib.error.HTTPError:
                 self.logger.exception("Cannot download OpenSearch distribution for version [%s] from [%s].", self.version, download_url)
                 raise exceptions.SystemSetupError("Cannot download OpenSearch distribution from [%s]. Please check that the specified "
                                                   "version [%s] is correct." % (download_url, self.version))
         else:
-            self.logger.info("Skipping download for version [%s]. Found an existing binary at [%s].", self.version, distribution_path)
+            print("Skipping download for version [%s]. Found an existing binary at [%s].", self.version, distribution_path)
 
         self.distribution_path = distribution_path
 
@@ -633,37 +633,37 @@ class SourceRepository:
     def _try_init(self, may_skip_init=False):
         if not git.is_working_copy(self.src_dir):
             if self.has_remote():
-                self.logger.info("Downloading sources for %s from %s to %s.", self.name, self.remote_url, self.src_dir)
+                print("Downloading sources for %s from %s to %s.", self.name, self.remote_url, self.src_dir)
                 git.clone(self.src_dir, self.remote_url)
             elif os.path.isdir(self.src_dir) and may_skip_init:
-                self.logger.info("Skipping repository initialization for %s.", self.name)
+                print("Skipping repository initialization for %s.", self.name)
             else:
                 exceptions.SystemSetupError("A remote repository URL is mandatory for %s" % self.name)
 
     def _update(self, revision):
         if self.has_remote() and revision == "latest":
-            self.logger.info("Fetching latest sources for %s from origin.", self.name)
+            print("Fetching latest sources for %s from origin.", self.name)
             git.pull(self.src_dir)
         elif revision == "current":
-            self.logger.info("Skip fetching sources for %s.", self.name)
+            print("Skip fetching sources for %s.", self.name)
         elif self.has_remote() and revision.startswith("@"):
             # convert timestamp annotated for Benchmark to something git understands -> we strip leading and trailing " and the @.
             git_ts_revision = revision[1:]
-            self.logger.info("Fetching from remote and checking out revision with timestamp [%s] for %s.", git_ts_revision, self.name)
+            print("Fetching from remote and checking out revision with timestamp [%s] for %s.", git_ts_revision, self.name)
             git.pull_ts(self.src_dir, git_ts_revision)
         elif self.has_remote():  # assume a git commit hash
-            self.logger.info("Fetching from remote and checking out revision [%s] for %s.", revision, self.name)
+            print("Fetching from remote and checking out revision [%s] for %s.", revision, self.name)
             git.pull_revision(self.src_dir, revision)
         else:
-            self.logger.info("Checking out local revision [%s] for %s.", revision, self.name)
+            print("Checking out local revision [%s] for %s.", revision, self.name)
             git.checkout(self.src_dir, revision)
 
         if git.is_working_copy(self.src_dir):
             git_revision = git.head_revision(self.src_dir)
-            self.logger.info("User-specified revision [%s] for [%s] results in git revision [%s]", revision, self.name, git_revision)
+            print("User-specified revision [%s] for [%s] results in git revision [%s]", revision, self.name, git_revision)
             return git_revision
         else:
-            self.logger.info("Skipping git revision resolution for %s (%s is not a git repository).", self.name, self.src_dir)
+            print("Skipping git revision resolution for %s (%s is not a git repository).", self.name, self.src_dir)
             return None
 
     @classmethod
@@ -703,7 +703,7 @@ class Builder:
 
         # we capture all output to a dedicated build log file
         build_cmd = "export JAVA_HOME={}; cd {}; {} > {} 2>&1".format(self.java_home, src_dir, command, log_file)
-        self.logger.info("Running build command [%s]", build_cmd)
+        print("Running build command [%s]", build_cmd)
 
         if process.run_subprocess(build_cmd):
             msg = "Executing '{}' failed. The last 20 lines in the build log file are:\n".format(command)
@@ -728,14 +728,14 @@ class DistributionRepository:
     @property
     def download_url(self):
         # provision_config repo
-        self.logger.info("runtime_jdk_bundled? [%s]", self.runtime_jdk_bundled)
+        print("runtime_jdk_bundled? [%s]", self.runtime_jdk_bundled)
         if self.runtime_jdk_bundled:
             default_key = "jdk.bundled.{}_url".format(self.name)
         else:
             default_key = "jdk.unbundled.{}_url".format(self.name)
         # benchmark.ini
         override_key = "{}.url".format(self.name)
-        self.logger.info("keys: [%s] and [%s]", override_key, default_key)
+        print("keys: [%s] and [%s]", override_key, default_key)
         return self._url_for(override_key, default_key)
 
     @property

@@ -22,6 +22,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+
+print("loading osbenchmark/metrics.py")
+
+
 import collections
 import glob
 import json
@@ -41,7 +45,6 @@ import tabulate
 
 from osbenchmark import client, time, exceptions, config, version, paths
 from osbenchmark.utils import convert, console, io, versions
-
 
 class OsClient:
     """
@@ -354,6 +357,7 @@ def calculate_system_results(store, node_name):
 
 def metrics_store(cfg, read_only=True, workload=None, test_procedure=None, provision_config_instance=None, meta_info=None):
     console.println("PRINT240+++++++++++++++++++++++++++")
+    print("function metrics_store in metrics.py")
     """
     Creates a proper metrics store based on the current configuration.
 
@@ -367,6 +371,7 @@ def metrics_store(cfg, read_only=True, workload=None, test_procedure=None, provi
 
     test_execution_id = cfg.opts("system", "test_execution.id")
     test_execution_timestamp = cfg.opts("system", "time.start")
+    print("@test_execution_timestamp", test_execution_timestamp)
     selected_provision_config_instance = cfg.opts("builder", "provision_config_instance.names") \
         if provision_config_instance is None else provision_config_instance
 
@@ -374,6 +379,8 @@ def metrics_store(cfg, read_only=True, workload=None, test_procedure=None, provi
         test_execution_id, test_execution_timestamp,
         workload, test_procedure, selected_provision_config_instance,
         create=not read_only)
+    print("@@@@@@@@@@@@ Creates a proper metrics store based on the current configuration. @@@@@@@@@@@@@@@@@")
+    print("@@@@@@@@@@@@ store", store)
     return store
 
 
@@ -386,7 +393,6 @@ def metrics_store_class(cfg):
 
 
 def extract_user_tags_from_config(cfg):
-    console.println("PRINT242+++++++++++++++++++++++++++")
     """
     Extracts user tags into a structured dict
 
@@ -398,7 +404,6 @@ def extract_user_tags_from_config(cfg):
 
 
 def extract_user_tags_from_string(user_tags):
-    console.println("PRINT243+++++++++++++++++++++++++++")
     """
     Extracts user tags into a structured dict
 
@@ -457,14 +462,16 @@ class MetricsStore:
             self._meta_info[MetaInfoScope.cluster] = {}
         if MetaInfoScope.node not in self._meta_info:
             self._meta_info[MetaInfoScope.node] = {}
+        print("@@@@@@@@@@@@ Creates a new metrics store.  @@@@@@@@@@@@@@@@@")
         self._clock = clock
+        print("self._clock", self._clock)
         self._stop_watch = self._clock.stop_watch()
+        print("self._clock.stop_watch()", self._stop_watch)
         self.logger = logging.getLogger(__name__)
 
     def open(self, test_ex_id=None, test_ex_timestamp=None, workload_name=None,\
          test_procedure_name=None, provision_config_instance_name=None, ctx=None,\
          create=False):
-        console.println("PRINT181+++++++++++++++++++++++++++")
         """
         Opens a metrics store for a specific test_execution, workload, test_procedure and provision_config_instance.
 
@@ -495,8 +502,8 @@ class MetricsStore:
         self._provision_config_instance_name = "+".join(self._provision_config_instance) \
             if isinstance(self._provision_config_instance, list) \
                 else self._provision_config_instance
-
-        self.logger.info("Opening metrics store for test execution timestamp=[%s], workload=[%s],"
+        print("@@@@@@@@@@@@ Opening metrics store for test execution timestamp=[%s], workload=[%s] @@@@@@@@@@@@@@@@@", self._test_execution_timestamp, self._workload)
+        print("Opening metrics store for test execution timestamp=[%s], workload=[%s],"
         "test_procedure=[%s], provision_config_instance=[%s]",
                          self._test_execution_timestamp, self._workload, self._test_procedure, self._provision_config_instance)
 
@@ -506,6 +513,8 @@ class MetricsStore:
             self.add_meta_info(MetaInfoScope.cluster, None, "tag_%s" % k, v)
         # Don't store it for each metrics record as it's probably sufficient on test execution level
         # self.add_meta_info(MetaInfoScope.cluster, None, "benchmark_version", version.version())
+        print("@@@@@@@@@@@@ Start timer at Opening metrics store  @@@@@@@@@@@@@@@@@")
+        print("self._stop_watch.start()", self._stop_watch.start())
         self._stop_watch.start()
         self.opened = True
 
@@ -514,6 +523,8 @@ class MetricsStore:
         """
         Resets the internal relative-time counter to zero.
         """
+        print("@@@@@@@@@@@@ Resets the internal relative-time counter to zero to metrics store @@@@@@@@@@@@@@@@@")
+        print("self._stop_watch.start()", self._stop_watch.start())
         self._stop_watch.start()
 
     def flush(self, refresh=True):
@@ -524,12 +535,12 @@ class MetricsStore:
         raise NotImplementedError("abstract method")
 
     def close(self):
-        console.println("PRINT184+++++++++++++++++++++++++++")
         """
         Closes the metric store. Note that it is mandatory to close the metrics store when it is no longer needed as it only persists
         metrics on close (in order to avoid additional latency during the benchmark).
         """
-        self.logger.info("Closing metrics store.")
+        print("Closing metrics store.")
+        print("@@@@@@@@@@@@ Closing metrics store. @@@@@@@@@@@@@@@@@")
         self.flush()
         self._clear_meta_info()
         self.opened = False
@@ -691,11 +702,16 @@ class MetricsStore:
 
         if meta and meta_data:
             meta.update(meta_data)
+        
+        print("@@@@@@@@@@@@ Adding a new doc to the metric store that has timestamps and workload info @@@@@@@@@@@@@@@@@")
+        print("@@@@@@@@@@@@ self._test_execution_id", self._test_execution_id)
 
         if absolute_time is None:
             absolute_time = self._clock.now()
+            print("@@@@@@@@@@@@ absolute_time", absolute_time)
         if relative_time is None:
             relative_time = self._stop_watch.split_time()
+            print("@@@@@@@@@@@@ relative_time", relative_time)
 
         doc.update({
             "@timestamp": time.to_epoch_millis(absolute_time),
@@ -923,7 +939,7 @@ class OsMetricsStore(MetricsStore):
             if not self._client.exists(index=self._index):
                 self._client.create_index(index=self._index)
             else:
-                self.logger.info("[%s] already exists.", self._index)
+                print("[%s] already exists.", self._index)
         else:
             # we still need to check for the correct index name - prefer the one with the suffix
             new_name = self._migrated_index_name(self._index)
@@ -951,7 +967,7 @@ class OsMetricsStore(MetricsStore):
             sw.start()
             self._client.bulk_index(index=self._index, doc_type=OsMetricsStore.METRICS_DOC_TYPE, items=self._docs)
             sw.stop()
-            self.logger.info("Successfully added %d metrics documents for test execution timestamp=[%s], workload=[%s], "
+            print("Successfully added %d metrics documents for test execution timestamp=[%s], workload=[%s], "
                              "test_procedure=[%s], provision_config_instance=[%s] in [%f] seconds.",
                              len(self._docs), self._test_execution_timestamp,
                              self._workload, self._test_procedure, self._provision_config_instance, sw.total_time())
@@ -1137,6 +1153,7 @@ class OsMetricsStore(MetricsStore):
 class InMemoryMetricsStore(MetricsStore):
     console.println("PRINT273+++++++++++++++++++++++++++")
     def __init__(self, cfg, clock=time.Clock, meta_info=None):
+        console.println("Creates a new metrics store.")
         """
 
         Creates a new metrics store.
@@ -1145,6 +1162,7 @@ class InMemoryMetricsStore(MetricsStore):
         :param clock: This parameter is optional and needed for testing.
         :param meta_info: This parameter is optional and intended for creating a metrics store with a previously serialized meta-info.
         """
+        console.println("@@@@@@@@@@@@ Creates a new InMemoryMetricsStore metrics store @@@@@@@@@@@@@@@@@")
         super().__init__(cfg=cfg, clock=clock, meta_info=meta_info)
         self.docs = []
 
@@ -1162,7 +1180,7 @@ class InMemoryMetricsStore(MetricsStore):
         pass
 
     def to_externalizable(self, clear=False):
-        console.println("PRINT275+++++++++++++++++++++++++++")
+        console.println("@@@@@@@@@@@@ Compression changed size of metric store")
         docs = self.docs
         if clear:
             self.docs = []

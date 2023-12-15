@@ -27,7 +27,7 @@ class OpenSearchDistributionDownloader(Downloader):
         is_cache_enabled = self.distribution_repository_provider.is_cache_enabled()
 
         if is_binary_present and is_cache_enabled:
-            self.logger.info("Skipping download for version [%s]. Found existing binary at [%s].", opensearch_version,
+            print("Skipping download for version [%s]. Found existing binary at [%s].", opensearch_version,
                              distribution_path)
         else:
             self._download_opensearch(host, distribution_path, download_url, opensearch_version)
@@ -49,8 +49,8 @@ class OpenSearchDistributionDownloader(Downloader):
             return False
 
     def _download_opensearch(self, host, distribution_path, download_url, opensearch_version):
-        self.logger.info("Resolved download URL [%s] for version [%s]", download_url, opensearch_version)
-        self.logger.info("Starting download of OpenSearch [%s]", opensearch_version)
+        print("Resolved download URL [%s] for version [%s]", download_url, opensearch_version)
+        print("Starting download of OpenSearch [%s]", opensearch_version)
 
         try:
             self.executor.execute(host, f"curl -o {distribution_path} {download_url}")
@@ -59,4 +59,4 @@ class OpenSearchDistributionDownloader(Downloader):
                                   opensearch_version, download_url)
             raise e
 
-        self.logger.info("Successfully downloaded OpenSearch [%s].", opensearch_version)
+        print("Successfully downloaded OpenSearch [%s].", opensearch_version)

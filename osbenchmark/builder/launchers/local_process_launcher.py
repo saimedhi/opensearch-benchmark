@@ -29,6 +29,7 @@ class LocalProcessLauncher(Launcher):
         return [self._start_node(host, node_configuration, node_count_on_host) for node_configuration in node_configurations]
 
     def _start_node(self, host, node_configuration, node_count_on_host):
+        print("@@@@@@@@@@@ start localprocessLauncher in builder/launcher.....y")
         host_name = node_configuration.ip
         node_name = node_configuration.node_name
         binary_path = node_configuration.binary_path
@@ -36,24 +37,25 @@ class LocalProcessLauncher(Launcher):
         java_major_version, java_home = java_resolver.java_home(node_configuration.provision_config_instance_runtime_jdks,
                                                                 self.provision_config_instance.variables["system"]["runtime"]["jdk"],
                                                                 node_configuration.provision_config_instance_provides_bundled_jdk)
-        self.logger.info("Java major version: %s", java_major_version)
-        self.logger.info("Java home: %s", java_home)
-        self.logger.info("Starting node [%s].", node_name)
+        print("Java major version: %s", java_major_version)
+        print("Java home: %s", java_home)
+        print("Starting node [%s].", node_name)
 
         telemetry = self._prepare_telemetry(node_configuration, node_count_on_host, java_major_version)
         env = self._prepare_env(node_name, java_home, telemetry)
         telemetry.on_pre_node_start(node_name)
 
         node_pid = self._start_process(host, binary_path, env)
-        self.logger.info("Successfully started node [%s] with PID [%s].", node_name, node_pid)
+        print("Successfully started node [%s] with PID [%s].", node_name, node_pid)
         node = cluster.Node(node_pid, binary_path, host_name, node_name, telemetry)
 
-        self.logger.info("Attaching telemetry devices to node [%s].", node_name)
+        print("Attaching telemetry devices to node [%s].", node_name)
         telemetry.attach_to_node(node)
 
         return node
 
     def _prepare_telemetry(self, node_configuration, node_count_on_host, java_major_version):
+        print("@@@@@@@@@@@ _prepare_telemetry localprocessLauncher in builder/launcher........py")
         data_paths = node_configuration.data_paths
         node_telemetry_dir = os.path.join(node_configuration.node_root_path, "telemetry")
 
@@ -81,7 +83,7 @@ class LocalProcessLauncher(Launcher):
             env["OPENSEARCH_JAVA_HOME"] = java_home
             # TODO remove this when ES <8.0 becomes unsupported by Benchmark
             env["JAVA_HOME"] = java_home
-            self.logger.info("JAVA HOME: %s", env["JAVA_HOME"])
+            print("JAVA HOME: %s", env["JAVA_HOME"])
         if not env.get("OPENSEARCH_JAVA_OPTS"):
             env["OPENSEARCH_JAVA_OPTS"] = "-XX:+ExitOnOutOfMemoryError"
 
@@ -123,7 +125,7 @@ class LocalProcessLauncher(Launcher):
             pid = self._get_pid_from_file(pid_file_name)
             return pid != 0
         except (FileNotFoundError, EOFError):
-            self.logger.info("PID file %s is not ready", pid_file_name)
+            print("PID file %s is not ready", pid_file_name)
             return False
 
     def _get_pid_from_file(self, pid_file_name):
@@ -134,7 +136,7 @@ class LocalProcessLauncher(Launcher):
             return int(buf)
 
     def stop(self, host, nodes):
-        self.logger.info("Shutting down [%d] nodes on this host.", len(nodes))
+        print("Shutting down [%d] nodes on this host.", len(nodes))
         stopped_nodes = []
         for node in nodes:
             node_stopped = self._stop_node(node)
@@ -176,13 +178,13 @@ class LocalProcessLauncher(Launcher):
         except psutil.NoSuchProcess:
             self.logger.warning("No process found with PID [%s] for node [%s].", opensearch_process.pid, node.node_name)
         except psutil.TimeoutExpired:
-            self.logger.info("kill -KILL node [%s]", node.node_name)
+            print("kill -KILL node [%s]", node.node_name)
             try:
                 # kill -9
                 opensearch_process.kill()
                 process_stopped = True
             except psutil.NoSuchProcess:
                 self.logger.warning("No process found with PID [%s] for node [%s].", opensearch_process.pid, node.node_name)
-        self.logger.info("Done shutting down node [%s].", node.node_name)
+        print("Done shutting down node [%s].", node.node_name)
 
         return process_stopped

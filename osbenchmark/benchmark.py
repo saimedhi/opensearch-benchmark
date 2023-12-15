@@ -633,11 +633,6 @@ def print_help_on_errors():
 def execute_test(cfg, kill_running_processes=False):
     logger = logging.getLogger(__name__)
     console.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    console.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    console.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    console.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    console.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    console.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     
     if kill_running_processes:
         logger.info("Killing running Benchmark processes")
@@ -933,11 +928,13 @@ def dispatch_sub_command(arg_parser, args, cfg):
 
 
 def main():
+    print("@@@@@@@@@@@@@@@ benchmark main()")
     check_python_version()
     log.install_default_log_config()
     log.configure_logging()
     logger = logging.getLogger(__name__)
     start = time.time()
+    print("@@@@@@@@@@@@@@@ start time in seconds since the epoch", start)
 
     # Early init of console output so we start to show everything consistently.
     console.init(quiet=False)
@@ -953,6 +950,7 @@ def main():
         cfg.install_default_config()
     cfg.load_config(auto_upgrade=True)
     cfg.add(config.Scope.application, "system", "time.start", datetime.datetime.utcnow())
+    print("@@@@@@@@@@@@@@@ system start time datetime.datetime.utcnow()", datetime.datetime.utcnow())
     # Local config per node
     cfg.add(config.Scope.application, "node", "benchmark.root", paths.benchmark_root())
     cfg.add(config.Scope.application, "node", "benchmark.cwd", os.getcwd())
@@ -971,11 +969,16 @@ def main():
             cfg.add(config.Scope.applicationOverride, "system", "offline.mode", True)
         else:
             logger.info("Detected a working Internet connection.")
-
+    
+    print("@@@@@@@@@@@@@@@ benchmark main() dispatching sub command")
+    print("@@args", args)
+    print("@@cfg", cfg)
     success = dispatch_sub_command(arg_parser, args, cfg)
 
     end = time.time()
+    print("@@@@@@@@@@@@@@@ end time in seconds since the epoch", end)
     if success:
+        print("@@@@@@@@@@@@@@@ here entire benchmark execution time is calculated in benchmark.py main ")
         console.println("")
         console.info("SUCCESS (took %d seconds)" % (end - start), overline="-", underline="-")
     else:

@@ -138,20 +138,20 @@ class OsClientFactory:
             # session_token is optional and used only for role based access
             if self.aws_log_in_dict.get("aws_session_token", None):
                 masked_client_options["aws_session_token"] = "*****"
-        self.logger.info("Creating OpenSearch client connected to %s with options [%s]", hosts, masked_client_options)
+        print("Creating OpenSearch client connected to %s with options [%s]", hosts, masked_client_options)
 
         # we're using an SSL context now and it is not allowed to have use_ssl present in client options anymore
         if self.client_options.pop("use_ssl", False):
             # pylint: disable=import-outside-toplevel
             import ssl
-            self.logger.info("SSL support: on")
+            print("SSL support: on")
             self.client_options["scheme"] = "https"
 
             self.ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH,
                                                           cafile=self.client_options.pop("ca_certs", certifi.where()))
 
             if not self.client_options.pop("verify_certs", True):
-                self.logger.info("SSL certificate verification: off")
+                print("SSL certificate verification: off")
                 # order matters to avoid ValueError: check_hostname needs a SSL context with either CERT_OPTIONAL or CERT_REQUIRED
                 self.ssl_context.check_hostname = False
                 self.ssl_context.verify_mode = ssl.CERT_NONE
@@ -168,14 +168,14 @@ class OsClientFactory:
                 # found in the host lists.
                 self.ssl_context.check_hostname = self._has_only_hostnames(hosts)
                 self.ssl_context.verify_mode=ssl.CERT_REQUIRED
-                self.logger.info("SSL certificate verification: on")
+                print("SSL certificate verification: on")
 
             # When using SSL_context, all SSL related kwargs in client options get ignored
             client_cert = self.client_options.pop("client_cert", False)
             client_key = self.client_options.pop("client_key", False)
 
             if not client_cert and not client_key:
-                self.logger.info("SSL client authentication: off")
+                print("SSL client authentication: off")
             elif bool(client_cert) != bool(client_key):
                 self.logger.error(
                     "Supplied client-options contain only one of client_cert/client_key. "
@@ -195,27 +195,27 @@ class OsClientFactory:
                         defined_client_ssl_option,
                         missing_client_ssl_option))
             elif client_cert and client_key:
-                self.logger.info("SSL client authentication: on")
+                print("SSL client authentication: on")
                 self.ssl_context.load_cert_chain(certfile=client_cert,
                                                  keyfile=client_key)
         else:
-            self.logger.info("SSL support: off")
+            print("SSL support: off")
             self.client_options["scheme"] = "http"
 
         if self._is_set(self.client_options, "basic_auth_user") and self._is_set(self.client_options, "basic_auth_password"):
-            self.logger.info("HTTP basic authentication: on")
+            print("HTTP basic authentication: on")
             self.client_options["http_auth"] = (self.client_options.pop("basic_auth_user"), self.client_options.pop("basic_auth_password"))
         else:
-            self.logger.info("HTTP basic authentication: off")
+            print("HTTP basic authentication: off")
 
         if self._is_set(self.client_options, "compressed"):
             console.warn("You set the deprecated client option 'compressed'. Please use 'http_compress' instead.", logger=self.logger)
             self.client_options["http_compress"] = self.client_options.pop("compressed")
 
         if self._is_set(self.client_options, "http_compress"):
-            self.logger.info("HTTP compression: on")
+            print("HTTP compression: on")
         else:
-            self.logger.info("HTTP compression: off")
+            print("HTTP compression: off")
 
         if self._is_set(self.client_options, "enable_cleanup_closed"):
             self.client_options["enable_cleanup_closed"] = convert.to_bool(self.client_options.pop("enable_cleanup_closed"))
