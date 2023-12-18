@@ -1706,6 +1706,8 @@ class GlobalStatsCalculator:
                         task.operation.name,
                         self.summary_stats("throughput", t, op_type),
                         self.single_latency(t, op_type),
+                        self.single_latency(t, op_type, metric_name="server_latency"),
+                        self.single_latency(t, op_type, metric_name="client_latency"),
                         self.single_latency(t, op_type, metric_name="service_time"),
                         self.single_latency(t, op_type, metric_name="processing_time"),
                         error_rate,
@@ -1949,6 +1951,10 @@ class GlobalStats:
                         all_results.append(op_metrics(item, "throughput"))
                     if "latency" in item:
                         all_results.append(op_metrics(item, "latency"))
+                    if "server_latency" in item:
+                        all_results.append(op_metrics(item, "server_latency"))
+                    if "client_latency" in item:
+                        all_results.append(op_metrics(item, "client_latency"))
                     if "service_time" in item:
                         all_results.append(op_metrics(item, "service_time"))
                     if "processing_time" in item:
@@ -1995,12 +2001,14 @@ class GlobalStats:
     def v(self, d, k, default=None):
         return d.get(k, default) if d else default
 
-    def add_op_metrics(self, task, operation, throughput, latency, service_time, processing_time, error_rate, duration, meta):
+    def add_op_metrics(self, task, operation, throughput, latency, server_latency, client_latency,  service_time, processing_time, error_rate, duration, meta):
         doc = {
             "task": task,
             "operation": operation,
             "throughput": throughput,
             "latency": latency,
+            "server_latency": server_latency, 
+            "client_latency": client_latency,
             "service_time": service_time,
             "processing_time": processing_time,
             "error_rate": error_rate,
