@@ -345,8 +345,25 @@ class MetaInfoScope(Enum):
 
 def calculate_results(store, test_execution):
     console.println("PRINT238+++++++++++++++++++++++++++")
+    print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+    print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+    print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+    print("metrics.calculate_results")
+    print("store", store)
+    print("test_execution.workload",  test_execution.workload)
+    print("test_execution.test_procedure", test_execution.test_procedure)
+    print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+    print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+    print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+
+
+
+
     calc = GlobalStatsCalculator(store, test_execution.workload, test_execution.test_procedure)
-    return calc()
+
+    p=calc()
+    print("@@@@@@@ p", p)
+    return p
 
 
 def calculate_system_results(store, node_name):
@@ -380,7 +397,7 @@ def metrics_store(cfg, read_only=True, workload=None, test_procedure=None, provi
         workload, test_procedure, selected_provision_config_instance,
         create=not read_only)
     print("@@@@@@@@@@@@ Creates a proper metrics store based on the current configuration. @@@@@@@@@@@@@@@@@")
-    print("@@@@@@@@@@@@ store", store)
+    print("@@@@@@@@@@@@ store", str(store))
     return store
 
 
@@ -644,12 +661,16 @@ class MetricsStore:
             raise exceptions.SystemSetupError("Unknown meta info level [%s] for metric [%s]" % (level, name))
         if meta_data:
             meta.update(meta_data)
-
+        print(f"BEFORE absolute_time={absolute_time},      relative_time={relative_time}")
         if absolute_time is None:
             absolute_time = self._clock.now()
         if relative_time is None:
             relative_time = self._stop_watch.split_time()
-
+        print(f"AFTER absolute_time={absolute_time},      relative_time={relative_time},      level={level}, level_key={level_key}, name={name}, value={value}, unit={unit}, task={task}, operation={operation}, operation_type ={operation_type}, sample_type={sample_type}, absolute_time={absolute_time}, meta_data={meta_data}")
+        
+        print("###########################################################")
+        print("###########################################################")
+        print("###########################################################")
         doc = {
             "@timestamp": time.to_epoch_millis(absolute_time),
             "relative-time-ms": convert.seconds_to_ms(relative_time),
@@ -1228,6 +1249,7 @@ class InMemoryMetricsStore(MetricsStore):
         console.println("PRINT278+++++++++++++++++++++++++++")
         error = 0
         total_count = 0
+        print("@@@@@@ docs in inmemory metricstore",self.docs )
         for doc in self.docs:
             # we can use any request metrics record (i.e. service time or latency)
             if doc["name"] == "service_time" and doc["task"] == task and \
@@ -1790,6 +1812,9 @@ class GlobalStatsCalculator:
     def __call__(self):
         console.println("PRINT294+++++++++++++++++++++++++++")
         result = GlobalStats()
+        print("class:   GlobalStatsCalculator")
+        print("__call__ result", result)
+        print("self.test_procedure.schedule", self.test_procedure.schedule)
 
         for tasks in self.test_procedure.schedule:
             for task in tasks:
@@ -2111,7 +2136,11 @@ class GlobalStats:
 
     def v(self, d, k, default=None):
         console.println("PRINT308+++++++++++++++++++++++++++")
-        return d.get(k, default) if d else default
+        
+        s= d.get(k, default) if d else default
+        print(f"printed in v globalstat : d={d} k={k} default={default} s={s}")
+
+        return s
 
     def add_op_metrics(self, task, operation, throughput, latency, service_time, processing_time, error_rate, duration, meta):
         console.println("PRINT309+++++++++++++++++++++++++++")

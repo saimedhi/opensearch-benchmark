@@ -896,6 +896,7 @@ class WorkerCoordinator:
 
     def update_samples(self, samples):
         console.println("PRINT104+++++++++++++++++++++++++++")
+        print("@@ samples", samples)
         if len(samples) > 0:
             self.raw_samples += samples
             # We need to check all samples, they will be from different clients
@@ -927,8 +928,10 @@ class WorkerCoordinator:
         # we do *not* do this here to avoid concurrent updates (actors are single-threaded) but rather to make it clear that we use
         # only a snapshot and that new data will go to a new sample set.
         raw_samples = self.raw_samples
+        print("post_process_samples worker coordinator @@@@ raw_sample", raw_samples)
         self.raw_samples = []
         self.sample_post_processor(raw_samples)
+
 
 
 class SamplePostprocessor:
@@ -943,12 +946,20 @@ class SamplePostprocessor:
         self.downsample_factor = downsample_factor
 
     def __call__(self, raw_samples):
-        console.println("PRINT108+++++++++++++++++++++++++++")
+        print("@@@@@@@@@@@@@@@@@@@@@@@ SamplePostprocessor __call__")
+        print("raw_samples", raw_samples)
+        print("self.metrics_store", self.metrics_store)
+        print("self.workload_meta_data", self.workload_meta_data)
+        print("self.test_procedure_meta_data", self.test_procedure_meta_data)
+        print("self.downsample_factor", self.downsample_factor)
+        print("self.throughput_calculator", str(self.throughput_calculator))
+
         if len(raw_samples) == 0:
             return
         total_start = time.perf_counter()
         start = total_start
         final_sample_count = 0
+
         for idx, sample in enumerate(raw_samples):
             if idx % self.downsample_factor == 0:
                 final_sample_count += 1
@@ -959,6 +970,7 @@ class SamplePostprocessor:
                     sample.task.meta_data,
                     sample.request_meta_data)
 
+                print(f"idx={idx}, sample={sample}, meta_data={meta_data}")
                 self.metrics_store.put_value_cluster_level(name="latency", value=convert.seconds_to_ms(sample.latency),
                                                            unit="ms", task=sample.task.name,
                                                            operation=sample.operation_name, operation_type=sample.operation_type,
@@ -999,6 +1011,7 @@ class SamplePostprocessor:
                 task.operation.meta_data,
                 task.meta_data
             )
+
             for absolute_time, relative_time, sample_type, throughput, throughput_unit in samples:
                 self.metrics_store.put_value_cluster_level(name="throughput", value=throughput, unit=throughput_unit, task=task.name,
                                                            operation=task.operation.name, operation_type=task.operation.type,
@@ -1287,9 +1300,15 @@ class Worker(actor.BenchmarkActor):
 
     def send_samples(self):
         console.println("PRINT129+++++++++++++++++++++++++++")
+        print("@@@@@@@ self.sampler", self.sampler)
         if self.sampler:
             samples = self.sampler.samples
+            print("@@@@@@@ self.sampler.samples", self.sampler.samples)
             if len(samples) > 0:
+                console.println("+++++++++++++++++++++++++++")
+                print("@@@@@@@ self.worker_id", self.worker_id)
+                print("@@@@@@@ samples", samples)
+                console.println("+++++++++++++++++++++++++++")
                 self.send(self.master, UpdateSamples(self.worker_id, samples))
             console.println("samples", samples)
             return samples
@@ -1311,6 +1330,7 @@ class Sampler:
             processing_time, throughput, ops, ops_unit, time_period, percent_completed, dependent_timing=None):
         console.println("PRINT131+++++++++++++++++++++++++++")
         try:
+            print(f"PRINT131 absolute_time={absolute_time}, latency={latency}")
             self.q.put_nowait(
                 Sample(client_id, absolute_time, request_start, self.start_timestamp, task, sample_type, meta_data,
                        latency, service_time, processing_time, throughput, ops, ops_unit, time_period,
@@ -1387,9 +1407,11 @@ class Sample:
 
     def __repr__(self, *args, **kwargs):
         console.println("PRINT139+++++++++++++++++++++++++++")
-        return f"[{self.absolute_time}; {self.relative_time}] [client [{self.client_id}]] [{self.task}] " \
+        s= f"[{self.absolute_time}; {self.relative_time}] [client [{self.client_id}]] [{self.task}] " \
                f"[{self.sample_type}]: [{self.latency}s] request latency, [{self.service_time}s] service time, " \
                f"[{self.total_ops} {self.total_ops_unit}]"
+        print("@@@@@@@@ __repr__   s", s)
+        return s
 
 
 def select_test_procedure(config, t):
@@ -1703,11 +1725,17 @@ class AsyncExecutor:
         self.logger = logging.getLogger(__name__)
 
     async def __call__(self, *args, **kwargs):
+        print("[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]")
+        print("[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]")
+        print("[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]")
         task_completes_parent = self.task.completes_parent
+        print("task_completes_parent        ", task_completes_parent)
         total_start = time.perf_counter()
+        print("total_start      ", total_start)
         # lazily initialize the schedule
         self.logger.debug("Initializing schedule for client id [%s].", self.client_id)
         schedule = self.schedule_handle()
+        print("schedule     ", schedule)
         self.logger.debug("Entering main loop for client id [%s].", self.client_id)
         # noinspection PyBroadException
         try:
@@ -1729,12 +1757,22 @@ class AsyncExecutor:
                     total_ops, total_ops_unit, request_meta_data = await execute_single(runner, self.opensearch, params, self.on_error)
                     request_start = request_context.request_start
                     request_end = request_context.request_end
+                    print("request_meta_data", request_meta_data)
 
                 processing_end = time.perf_counter()
                 service_time = request_end - request_start
                 console.println("imp 2 * service_time", service_time)
                 processing_time = processing_end - processing_start
                 time_period = request_end - total_start
+                print("((((((((((((()))))))))))))")
+                print("processing_time", processing_time)
+                print("time_period", time_period)
+                print("service_time", service_time)
+                print("absolute_processing_start      ", absolute_processing_start)
+                print("total_start      ", total_start)
+                print("absolute_expected_schedule_time      ", absolute_expected_schedule_time)
+                print("request_end      ", request_end)
+                print("TIME,processing_time-service_time", processing_time-service_time)
                 self.schedule_handle.after_request(processing_end, total_ops, total_ops_unit, request_meta_data)
                 # Allow runners to override the throughput calculation in very specific circumstances. Usually, Benchmark
                 # assumes that throughput is the "amount of work" (determined by the "weight") per unit of time
@@ -1765,7 +1803,10 @@ class AsyncExecutor:
                     progress = runner.percent_completed
                 else:
                     progress = percent_completed
-
+                
+                print("[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]")
+                print("[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]")
+                print("[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]")
                 self.sampler.add(self.task, self.client_id, sample_type, request_meta_data,
                                  absolute_processing_start, request_start,
                                  latency, service_time, processing_time, throughput, total_ops, total_ops_unit,
@@ -1796,7 +1837,10 @@ async def execute_single(runner, opensearch, params, on_error):
     fatal_error = False
     try:
         async with runner:
+            print("@@@@@Params", params)
+            print("runner", str(runner))
             return_value = await runner(opensearch, params)
+
         if isinstance(return_value, tuple) and len(return_value) == 2:
             total_ops, total_ops_unit = return_value
             request_meta_data = {"success": True}
