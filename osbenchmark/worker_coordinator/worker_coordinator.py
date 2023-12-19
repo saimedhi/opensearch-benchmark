@@ -1615,7 +1615,7 @@ class AsyncExecutor:
                 throughput = request_meta_data.pop("throughput", None)
                 # Do not calculate latency separately when we run unthrottled. This metric is just confusing then.
                 latency = request_end - absolute_expected_schedule_time if throughput_throttled else service_time
-                server_latency = request_meta_data["took"]
+                server_latency = request_meta_data["took"]/1000
                 client_latency = latency - server_latency
                 
                 # If this task completes the parent task we should *not* check for completion by another client but
