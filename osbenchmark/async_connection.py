@@ -7,6 +7,7 @@
 # GitHub history for details.
 
 import asyncio
+import time
 import json
 import logging
 from typing import Optional, List
@@ -204,6 +205,21 @@ class AIOHttpConnection(opensearchpy.AIOHttpConnection):
             self._request_class = aiohttp.ClientRequest
             self._response_class = RawClientResponse
 
+    async def perform_request(self, method, url, params=None, body=None, timeout=None, ignore=(), headers=None):
+        request_sent_time = time.perf_counter()
+        response = await super().perform_request(method=method, url=url, params=params, body=body, timeout=timeout, ignore=ignore, headers=self.headers)
+        response_received_time = time.perf_counter()
+        server_time = response_received_time - request_sent_time
+
+        result = list(response)
+        s = result[2]
+        s_dict = json.loads(s.decode('utf-8'))
+        s_dict.update({"server_time": server_time})
+        updated_s = json.dumps(s_dict).encode('utf-8')
+        result[2] = updated_s
+
+        return tuple(result)
+    
     async def _create_aiohttp_session(self):
         if self.loop is None:
             self.loop = asyncio.get_running_loop()

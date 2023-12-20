@@ -495,15 +495,19 @@ class BulkIndex(Runner):
             response = await opensearch.bulk(doc_type=params.get("type"), params=bulk_params, **api_kwargs)
 
         stats = self.detailed_stats(params, response) if detailed_results else self.simple_stats(bulk_size, unit, response)
-
+        parsed_response = json.loads(response.getvalue())
+        print("parsed_response[server_time]", parsed_response["server_time"])
         meta_data = {
             "index": params.get("index"),
             "weight": bulk_size,
             "unit": unit,
+            "server_time": parsed_response["server_time"]
         }
         meta_data.update(stats)
         if not stats["success"]:
             meta_data["error-type"] = "bulk"
+        
+        print("meta_data in BulkIndex runner", meta_data)
         return meta_data
 
     def detailed_stats(self, params, response):
@@ -641,7 +645,7 @@ class ForceMerge(Runner):
         if mode == "polling":
             complete = False
             try:
-                await opensearch.indices.forcemerge(**merge_params)
+                response = await opensearch.indices.forcemerge(**merge_params)
                 complete = True
             except opensearchpy.ConnectionTimeout:
                 pass
@@ -653,7 +657,9 @@ class ForceMerge(Runner):
                     complete = True
         else:
             await opensearch.indices.forcemerge(**merge_params)
-
+        print("response in forcemerge runner 1")
+        
+        
     def __repr__(self, *args, **kwargs):
         return "force-merge"
 
@@ -1221,12 +1227,18 @@ class CreateIndex(Runner):
         ## ignore invalid entries rather than erroring
         for term in ["index", "body"]:
             api_params.pop(term, None)
+        Total_server_time = 0
         for index, body in indices:
-            await opensearch.indices.create(index=index, body=body, **api_params)
+           
+            Response = await opensearch.indices.create(index=index, body=body, **api_params)
+            
+            Total_server_time = Total_server_time+Response["server_time"]
+      
         return {
             "weight": len(indices),
             "unit": "ops",
-            "success": True
+            "success": True,
+            "server_time": Total_server_time
         }
 
     def __repr__(self, *args, **kwargs):
@@ -1238,7 +1250,7 @@ class CreateDataStream(Runner):
         data_streams = mandatory(params, "data-streams", self)
         request_params = mandatory(params, "request-params", self)
         for data_stream in data_streams:
-            await opensearch.indices.create_data_stream(data_stream, params=request_params)
+            Response = await opensearch.indices.create_data_stream(data_stream, params=request_params)
         return {
             "weight": len(data_streams),
             "unit": "ops",

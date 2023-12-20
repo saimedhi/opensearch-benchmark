@@ -1582,9 +1582,14 @@ class AsyncExecutor:
                     total_ops, total_ops_unit, request_meta_data = await execute_single(runner, self.opensearch, params, self.on_error)
                     request_start = request_context.request_start
                     request_end = request_context.request_end
+                    
+                    if "server_time" in request_meta_data:
+                        server_time = request_meta_data["server_time"]
+                        print("Server Time:", server_time)
 
                 processing_end = time.perf_counter()
                 service_time = request_end - request_start
+                print("Service Time:", service_time)
                 processing_time = processing_end - processing_start
                 time_period = request_end - total_start
                 self.schedule_handle.after_request(processing_end, total_ops, total_ops_unit, request_meta_data)
@@ -1649,6 +1654,9 @@ async def execute_single(runner, opensearch, params, on_error):
     try:
         async with runner:
             return_value = await runner(opensearch, params)
+            
+            print("********** return_value", return_value)
+            
         if isinstance(return_value, tuple) and len(return_value) == 2:
             total_ops, total_ops_unit = return_value
             request_meta_data = {"success": True}
