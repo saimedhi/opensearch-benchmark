@@ -32,6 +32,7 @@ from urllib3.util.ssl_ import is_ipaddress
 
 from osbenchmark import exceptions, doc_link
 from osbenchmark.utils import console, convert
+#from osbenchmark.async_transport import CustomAsyncTransport
 
 
 class RequestContextManager:
@@ -309,6 +310,7 @@ class OsClientFactory:
         class LazyJSONSerializer(JSONSerializer):
             def loads(self, s):
                 meta = BenchmarkAsyncOpenSearch.request_context.get()
+                print("meta  ", meta)
                 if "raw_response" in meta:
                     return io.BytesIO(s)
                 else:
@@ -334,21 +336,26 @@ class OsClientFactory:
             pass
 
         if "amazon_aws_log_in" not in self.client_options:
-            return BenchmarkAsyncOpenSearch(hosts=self.hosts,
+            
+            async_response = BenchmarkAsyncOpenSearch(hosts=self.hosts,
+                                            #transport_class= CustomAsyncTransport,
                                             connection_class=osbenchmark.async_connection.AIOHttpConnection,
                                             ssl_context=self.ssl_context,
                                             **self.client_options)
+            print("async_response", async_response)
+            return async_response
 
         credentials = Credentials(access_key=self.aws_log_in_dict["aws_access_key_id"],
                                   secret_key=self.aws_log_in_dict["aws_secret_access_key"],
                                   token=self.aws_log_in_dict["aws_session_token"])
         aws_auth = opensearchpy.AWSV4SignerAsyncAuth(credentials, self.aws_log_in_dict["region"],
                                                      self.aws_log_in_dict["service"])
-        return BenchmarkAsyncOpenSearch(hosts=self.hosts,
+        async_response = BenchmarkAsyncOpenSearch(hosts=self.hosts,
                                         connection_class=osbenchmark.async_connection.AsyncHttpConnection,
                                         use_ssl=True, verify_certs=True, http_auth=aws_auth,
                                         **self.client_options)
-
+        print("async_response", async_response)
+        return async_response
 
 def wait_for_rest_layer(opensearch, max_attempts=40):
     """

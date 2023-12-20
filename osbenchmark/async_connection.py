@@ -7,9 +7,11 @@
 # GitHub history for details.
 
 import asyncio
+import time
 import json
 import logging
 from typing import Optional, List
+from multidict import CIMultiDict, CIMultiDictProxy
 
 import aiohttp
 import opensearchpy
@@ -185,6 +187,7 @@ class AIOHttpConnection(opensearchpy.AIOHttpConnection):
                          opaque_id=opaque_id,
                          loop=loop,
                          **kwargs,)
+        self.server_time = None
 
         self._trace_configs = [trace_config] if trace_config else None
         self._enable_cleanup_closed = kwargs.get("enable_cleanup_closed", False)
@@ -204,6 +207,52 @@ class AIOHttpConnection(opensearchpy.AIOHttpConnection):
             self._request_class = aiohttp.ClientRequest
             self._response_class = RawClientResponse
 
+    async def perform_request(self, method, url, params=None, body=None, timeout=None, ignore=(), headers=None):
+        print("perform_request aiohttpconnection")
+        print("method, url, params, body, timeout, ignore, headers",method, url, params, body, timeout, ignore, headers)
+        request_sent_time = time.perf_counter()
+        print()
+        response = await super().perform_request(method=method, url=url, params=params, body=body, timeout=timeout, ignore=ignore, headers=self.headers)
+        response_received_time = time.perf_counter()
+        server_time = response_received_time - request_sent_time
+
+        print("response11", response, "response type 11", type(response))
+        print("server_time11", server_time, "server_time type 11", type(server_time))
+        result=list(response)
+        print("result[1]", result[1], type(result[1]))
+        print("result[2]", result[2], type(result[2]))
+        ##s=result[1]
+        s=result[2]
+        print("s        ",s)
+        # s.update({"server_time": server_time})
+        s_dict = json.loads(s.decode('utf-8'))
+
+        # Now you can update the dictionary
+        # server_time = "2023-01-01 12:00:00"
+        s_dict.update({"server_time": server_time})
+        # normal_dict = dict(s)
+        # normal_dict.update({"server_time": server_time})
+        
+        # print("normal_dict       ", normal_dict)
+        # cimultidict = CIMultiDict(normal_dict)
+        # print("cimultidict       ", cimultidict)
+        # # Create a CIMultiDictProxy
+        # cimultidict_proxy = CIMultiDictProxy(cimultidict)
+        # print("cimultidict_proxy       ", cimultidict_proxy)
+        # k= CIMultiDictProxy(normal_dict)
+        # print("k       ", k)
+        ##result[1]=cimultidict_proxy
+        # result[2]=cimultidict_proxy
+        # print("result[1] later       ", result[1])
+        # print("result[2] later       ", result[2])
+        # print("tuple(result)", tuple(result))
+        updated_s = json.dumps(s_dict).encode('utf-8')
+
+        result[2]=updated_s
+        self.server_time=server_time
+
+        return tuple(result)
+    
     async def _create_aiohttp_session(self):
         if self.loop is None:
             self.loop = asyncio.get_running_loop()

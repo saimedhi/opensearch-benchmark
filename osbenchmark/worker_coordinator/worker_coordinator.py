@@ -42,6 +42,7 @@ from enum import Enum
 import thespian.actors
 
 from osbenchmark import actor, config, exceptions, metrics, workload, client, paths, PROGRAM_NAME, telemetry
+from osbenchmark.async_connection import AIOHttpConnection
 from osbenchmark.worker_coordinator import runner, scheduler
 from osbenchmark.workload import WorkloadProcessorRegistry, load_workload, load_workload_plugins
 from osbenchmark.utils import convert, console, net
@@ -1574,6 +1575,8 @@ class AsyncExecutor:
                     rest = absolute_expected_schedule_time - time.perf_counter()
                     if rest > 0:
                         await asyncio.sleep(rest)
+                
+                aiohttp_connection = AIOHttpConnection(host="localhost", port=9200)
 
                 absolute_processing_start = time.time()
                 processing_start = time.perf_counter()
@@ -1582,6 +1585,12 @@ class AsyncExecutor:
                     total_ops, total_ops_unit, request_meta_data = await execute_single(runner, self.opensearch, params, self.on_error)
                     request_start = request_context.request_start
                     request_end = request_context.request_end
+                    if "server_time" in request_meta_data:
+                        server_time=request_meta_data["server_time"]
+                        print("Server Time:", request_meta_data["server_time"])
+
+                # print("Server Time:", request_meta_data["server_time"])
+                print("total_ops    , total_ops_unit    , request_meta_data ", total_ops, total_ops_unit, request_meta_data)
 
                 processing_end = time.perf_counter()
                 service_time = request_end - request_start
@@ -1649,6 +1658,7 @@ async def execute_single(runner, opensearch, params, on_error):
     try:
         async with runner:
             return_value = await runner(opensearch, params)
+            print("********** return_value",return_value )
         if isinstance(return_value, tuple) and len(return_value) == 2:
             total_ops, total_ops_unit = return_value
             request_meta_data = {"success": True}
