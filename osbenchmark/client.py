@@ -32,85 +32,142 @@ from urllib3.util.ssl_ import is_ipaddress
 
 from osbenchmark import exceptions, doc_link
 from osbenchmark.utils import console, convert
+#from osbenchmark.async_transport import CustomAsyncTransport
 
 
 class RequestContextManager:
+    print("printRequestContextManager9")
     """
     Ensures that request context span the defined scope and allow nesting of request contexts with proper propagation.
     This means that we can span a top-level request context, open sub-request contexts that can be used to measure
     individual timings and still measure the proper total time on the top-level request context.
     """
     def __init__(self, request_context_holder):
+        print("printRequestContextManager1")
         self.ctx_holder = request_context_holder
         self.ctx = None
         self.token = None
 
     async def __aenter__(self):
+        print("printRequestContextManager2")
         self.ctx, self.token = self.ctx_holder.init_request_context()
         return self
 
     @property
     def request_start(self):
+        print("printRequestContextManager3")
+        print("self.ctx[request_start]", self.ctx["request_start"])
         return self.ctx["request_start"]
 
     @property
     def request_end(self):
+        print("printRequestContextManager4")
+        print("self.ctx[request_end]", self.ctx["request_end"])
         return self.ctx["request_end"]
+    
+    @property
+    def server_request_start(self):
+        print("printRequestContextManager5")
+        print("self.ctx[server_request_start]", self.ctx["server_request_start"])
+        return self.ctx["server_request_start"]
+
+    @property
+    def server_request_end(self):
+        print("printRequestContextManager6")
+        print("self.ctx[server_request_end]", self.ctx["server_request_end"])
+        return self.ctx["server_request_end"]
+
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        print("printRequestContextManager7")
         # propagate earliest request start and most recent request end to parent
         request_start = self.request_start
         request_end = self.request_end
+        server_request_start = self.server_request_start
+        server_request_end = self.server_request_end
         self.ctx_holder.restore_context(self.token)
         # don't attempt to restore these values on the top-level context as they don't exist
         if self.token.old_value != contextvars.Token.MISSING:
             self.ctx_holder.update_request_start(request_start)
             self.ctx_holder.update_request_end(request_end)
+            self.ctx_holder.update_server_request_start(server_request_start)
+            self.ctx_holder.update_server_request_end(server_request_end)
         self.token = None
         return False
 
 
 class RequestContextHolder:
+    print("printRequestContextManager8")
     """
     Holds request context variables. This class is only meant to be used together with RequestContextManager.
     """
     request_context = contextvars.ContextVar("benchmark_request_context")
 
     def new_request_context(self):
+        print("printRequestContextManager10")
         return RequestContextManager(self)
 
     @classmethod
     def init_request_context(cls):
+        print("printRequestContextManager11")
         ctx = {}
         token = cls.request_context.set(ctx)
         return ctx, token
 
     @classmethod
     def restore_context(cls, token):
+        print("printRequestContextManager12")
         cls.request_context.reset(token)
 
     @classmethod
     def update_request_start(cls, new_request_start):
+        print("printRequestContextManager13")
         meta = cls.request_context.get()
         # this can happen if multiple requests are sent on the wire for one logical request (e.g. scrolls)
         if "request_start" not in meta:
             meta["request_start"] = new_request_start
+    
+    @classmethod
+    def update_server_request_start(cls, new_server_request_start):
+        print("printRequestContextManager18")
+        meta = cls.request_context.get()
+        meta["server_request_start"] = new_server_request_start
+
+    @classmethod
+    def update_server_request_end(cls, new_server_request_end):
+        print("printRequestContextManager19")
+        meta = cls.request_context.get()
+        meta["server_request_end"] = new_server_request_end
 
     @classmethod
     def update_request_end(cls, new_request_end):
+        print("printRequestContextManager14")
         meta = cls.request_context.get()
         meta["request_end"] = new_request_end
 
     @classmethod
     def on_request_start(cls):
+        print("printRequestContextManager15")
         cls.update_request_start(time.perf_counter())
 
     @classmethod
     def on_request_end(cls):
+        print("printRequestContextManager16")
         cls.update_request_end(time.perf_counter())
 
     @classmethod
+    def on_server_request_start(cls):
+        print("printRequestContextManager15.1")
+        cls.update_server_request_start(time.perf_counter())
+
+    @classmethod
+    def on_server_request_end(cls):
+        print("printRequestContextManager16.1")
+        cls.update_server_request_end(time.perf_counter())
+
+    @classmethod
     def return_raw_response(cls):
+        print("printRequestContextManager17")
         ctx = cls.request_context.get()
         ctx["raw_response"] = True
 

@@ -496,14 +496,19 @@ class BulkIndex(Runner):
 
         stats = self.detailed_stats(params, response) if detailed_results else self.simple_stats(bulk_size, unit, response)
 
+        # parsed_response = json.loads(response.getvalue())
+        # print("parsed_response[server_time]", parsed_response["server_time"])
         meta_data = {
             "index": params.get("index"),
             "weight": bulk_size,
             "unit": unit,
+            # "server_time": parsed_response["server_time"]
         }
         meta_data.update(stats)
         if not stats["success"]:
             meta_data["error-type"] = "bulk"
+        
+        #print("meta_data in BulkIndex runner", meta_data)
         return meta_data
 
     def detailed_stats(self, params, response):
@@ -1228,6 +1233,22 @@ class CreateIndex(Runner):
             "unit": "ops",
             "success": True
         }
+        # for term in ["index", "body"]:
+        #     api_params.pop(term, None)
+        # Total_server_time=0
+        # for index, body in indices:
+        #     print("CreateIndex runner running, index ", index)
+        #     Response = await opensearch.indices.create(index=index, body=body, **api_params)
+        #     print("Response printed", Response)
+        #     print("Response [server_time]", Response["server_time"])
+        #     Total_server_time=Total_server_time+Response["server_time"]
+        #     print("Total_server_time", Total_server_time)
+        # return {
+        #     "weight": len(indices),
+        #     "unit": "ops",
+        #     "success": True,
+        #     "server_time" : Total_server_time
+        # }
 
     def __repr__(self, *args, **kwargs):
         return "create-index"
@@ -1238,7 +1259,7 @@ class CreateDataStream(Runner):
         data_streams = mandatory(params, "data-streams", self)
         request_params = mandatory(params, "request-params", self)
         for data_stream in data_streams:
-            await opensearch.indices.create_data_stream(data_stream, params=request_params)
+            Response = await opensearch.indices.create_data_stream(data_stream, params=request_params)
         return {
             "weight": len(data_streams),
             "unit": "ops",
