@@ -10,7 +10,7 @@ import asyncio
 import json
 import logging
 from typing import Optional, List
-
+import time
 import aiohttp
 import opensearchpy
 from aiohttp import RequestInfo, BaseConnector
@@ -18,7 +18,7 @@ from aiohttp.client_proto import ResponseHandler
 from aiohttp.helpers import BaseTimerContext
 from multidict import CIMultiDictProxy, CIMultiDict
 from yarl import URL
-
+from osbenchmark.client import RequestContextHolder
 from osbenchmark.utils import io
 
 
@@ -203,6 +203,24 @@ class AIOHttpConnection(opensearchpy.AIOHttpConnection):
         else:
             self._request_class = aiohttp.ClientRequest
             self._response_class = RawClientResponse
+
+    async def perform_request(self, method, url, params=None, body=None, timeout=None, ignore=(), headers=None):
+        
+        request_context_holder = RequestContextHolder()  # Create an instance
+        request_context_holder.on_server_request_start()
+        print("time.perf_counter()",time.perf_counter())
+        request_context_holder.on_server_request_end()
+        print("time.perf_counter()",time.perf_counter())
+        print("method=",method, "url=",url, "params=",params, "body=",body, "timeout=",timeout, "ignore=",ignore, "headers=",self.headers)
+        status, headers, raw_data = await super().perform_request(method=method, url=url, params=params, body=body, timeout=timeout, ignore=ignore, headers=self.headers)
+        
+        print("$$$$$$$$$$$$$$$$$$$$$$$$")
+        
+        print("time.perf_counter()",time.perf_counter())
+        request_context_holder.on_server_request_end()
+        print("time.perf_counter()",time.perf_counter())
+        return status, headers, raw_data
+
 
     async def _create_aiohttp_session(self):
         if self.loop is None:

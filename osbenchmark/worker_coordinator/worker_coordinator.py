@@ -1582,6 +1582,8 @@ class AsyncExecutor:
                     total_ops, total_ops_unit, request_meta_data = await execute_single(runner, self.opensearch, params, self.on_error)
                     request_start = request_context.request_start
                     request_end = request_context.request_end
+                    server_request_start = request_context.server_request_start
+                    server_request_end = request_context.server_request_end
 
                 processing_end = time.perf_counter()
                 service_time = request_end - request_start
