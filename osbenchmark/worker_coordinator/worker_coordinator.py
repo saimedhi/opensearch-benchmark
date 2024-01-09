@@ -568,25 +568,25 @@ class WorkerCoordinator:
         log_root = paths.test_execution_root(self.config)
 
         os_default = opensearch["default"]
-        with os_default.new_request_context() as request_context:
-            if enable:
-                devices = [
-                    telemetry.NodeStats(telemetry_params, opensearch, self.metrics_store),
-                    telemetry.ExternalEnvironmentInfo(os_default, self.metrics_store),
-                    telemetry.ClusterEnvironmentInfo(os_default, self.metrics_store),
-                    telemetry.JvmStatsSummary(os_default, self.metrics_store),
-                    telemetry.IndexStats(os_default, self.metrics_store),
-                    telemetry.MlBucketProcessingTime(os_default, self.metrics_store),
-                    telemetry.SegmentStats(log_root, os_default),
-                    telemetry.CcrStats(telemetry_params, opensearch, self.metrics_store),
-                    telemetry.RecoveryStats(telemetry_params, opensearch, self.metrics_store),
-                    telemetry.TransformStats(telemetry_params, opensearch, self.metrics_store),
-                    telemetry.SearchableSnapshotsStats(telemetry_params, opensearch, self.metrics_store),
-                    telemetry.SegmentReplicationStats(telemetry_params, opensearch, self.metrics_store)
-                ]
-            else:
-                devices = []
-            self.telemetry = telemetry.Telemetry(enabled_devices, devices=devices)
+        #with os_default.new_request_context() as request_context:
+        if enable:
+            devices = [
+                telemetry.NodeStats(telemetry_params, opensearch, self.metrics_store),
+                # telemetry.ExternalEnvironmentInfo(os_default, self.metrics_store),
+                # telemetry.ClusterEnvironmentInfo(os_default, self.metrics_store),
+                # telemetry.JvmStatsSummary(os_default, self.metrics_store),
+                # telemetry.IndexStats(os_default, self.metrics_store),
+                # telemetry.MlBucketProcessingTime(os_default, self.metrics_store),
+                # telemetry.SegmentStats(log_root, os_default),
+                # telemetry.CcrStats(telemetry_params, opensearch, self.metrics_store),
+                # telemetry.RecoveryStats(telemetry_params, opensearch, self.metrics_store),
+                # telemetry.TransformStats(telemetry_params, opensearch, self.metrics_store),
+                # telemetry.SearchableSnapshotsStats(telemetry_params, opensearch, self.metrics_store),
+                # telemetry.SegmentReplicationStats(telemetry_params, opensearch, self.metrics_store)
+            ]
+        else:
+            devices = []
+        self.telemetry = telemetry.Telemetry(enabled_devices, devices=devices)
 
     def wait_for_rest_api(self, opensearch):
         os_default = opensearch["default"]
