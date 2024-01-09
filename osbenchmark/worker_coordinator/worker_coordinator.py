@@ -572,17 +572,17 @@ class WorkerCoordinator:
         if enable:
             devices = [
                 telemetry.NodeStats(telemetry_params, opensearch, self.metrics_store),
-                # telemetry.ExternalEnvironmentInfo(os_default, self.metrics_store),
-                # telemetry.ClusterEnvironmentInfo(os_default, self.metrics_store),
-                # telemetry.JvmStatsSummary(os_default, self.metrics_store),
-                # telemetry.IndexStats(os_default, self.metrics_store),
-                # telemetry.MlBucketProcessingTime(os_default, self.metrics_store),
-                # telemetry.SegmentStats(log_root, os_default),
-                # telemetry.CcrStats(telemetry_params, opensearch, self.metrics_store),
-                # telemetry.RecoveryStats(telemetry_params, opensearch, self.metrics_store),
-                # telemetry.TransformStats(telemetry_params, opensearch, self.metrics_store),
-                # telemetry.SearchableSnapshotsStats(telemetry_params, opensearch, self.metrics_store),
-                # telemetry.SegmentReplicationStats(telemetry_params, opensearch, self.metrics_store)
+                telemetry.ExternalEnvironmentInfo(os_default, self.metrics_store),
+                telemetry.ClusterEnvironmentInfo(os_default, self.metrics_store),
+                telemetry.JvmStatsSummary(os_default, self.metrics_store),
+                telemetry.IndexStats(os_default, self.metrics_store),
+                telemetry.MlBucketProcessingTime(os_default, self.metrics_store),
+                telemetry.SegmentStats(log_root, os_default),
+                telemetry.CcrStats(telemetry_params, opensearch, self.metrics_store),
+                telemetry.RecoveryStats(telemetry_params, opensearch, self.metrics_store),
+                telemetry.TransformStats(telemetry_params, opensearch, self.metrics_store),
+                telemetry.SearchableSnapshotsStats(telemetry_params, opensearch, self.metrics_store),
+                telemetry.SegmentReplicationStats(telemetry_params, opensearch, self.metrics_store)
             ]
         else:
             devices = []
@@ -1581,16 +1581,11 @@ class AsyncExecutor:
                 processing_start = time.perf_counter()
                 self.schedule_handle.before_request(processing_start)
 
-                print("self.opensearch", str(self.opensearch))
 
                 with self.opensearch["default"].new_request_context() as request_context:
-                    print("request_context", str(request_context))
                     total_ops, total_ops_unit, request_meta_data = await execute_single(runner, self.opensearch, params, self.on_error)
-                    print("$$$$$$$$$$$$$$$$$")
                     request_start = request_context.request_start
                     request_end = request_context.request_end
-                    print("request_start", request_start)
-                    print("request_end", request_end)
 
                 processing_end = time.perf_counter()
                 service_time = request_end - request_start

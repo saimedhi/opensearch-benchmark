@@ -165,7 +165,6 @@ class Urllib3HttpConnection(opensearchpy.Urllib3HttpConnection):
                 http_compress = None,
                 opaque_id = None,
                 **kwargs,):
-        print("subclass Urllib3HttpConnection printed init")
         super().__init__(host=host,
                          port=port,
                          http_auth=http_auth,
@@ -182,14 +181,10 @@ class Urllib3HttpConnection(opensearchpy.Urllib3HttpConnection):
                         
 
     def perform_request(self, method, url, params=None, body=None, timeout=None, ignore=(), headers=None):
-        print("subclass Urllib3HttpConnection printed perform_request")
         from osbenchmark.client import RequestContextHolder
         request_context_holder = RequestContextHolder()
-        print("on request start")
         request_context_holder.on_request_start()
-        print("on request start end")
         status, headers, raw_data = super().perform_request(method=method, url=url, params=params, body=body, timeout=timeout, ignore=ignore, headers=headers)
-        print("on request end")
         request_context_holder.on_request_end()
         return status, headers, raw_data
     

@@ -75,8 +75,6 @@ class RequestContextManager:
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         # propagate earliest request start and most recent request end to parent
-        print("self.request_start", self.request_start)
-        print("self.request_end",self.request_end)
         request_start = self.request_start
         request_end = self.request_end
         self.ctx_holder.restore_context(self.token)
@@ -306,7 +304,6 @@ class OsClientFactory:
         if "amazon_aws_log_in" not in self.client_options:
             class BenchmarkOpenSearch(opensearchpy.OpenSearch, RequestContextHolder):
                 pass
-            print("benchmarkopensearch printed")
             return BenchmarkOpenSearch(hosts=self.hosts, ssl_context=self.ssl_context, **self.client_options, connection_class = osbenchmark.async_connection.Urllib3HttpConnection)
 
         # credentials = Credentials(access_key=self.aws_log_in_dict["aws_access_key_id"],

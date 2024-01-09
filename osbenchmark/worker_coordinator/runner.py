@@ -579,8 +579,6 @@ class BulkIndex(Runner):
         bulk_error_count = 0
         error_details = set()
         # parse lazily on the fast path
-        print("response", response)
-        print("response", type(response))
         response_bytes_io = BytesIO(json.dumps(response).encode())
         props = parse(response_bytes_io, ["errors", "took"])
 

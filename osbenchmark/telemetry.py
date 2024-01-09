@@ -1287,20 +1287,21 @@ class ClusterEnvironmentInfo(InternalTelemetryDevice):
 
     def on_benchmark_start(self):
         # noinspection PyBroadException
-        try:
-            client_info = self.client.info()
-        except BaseException:
-            self.logger.exception("Could not retrieve cluster version info")
-            return
-        revision = client_info["version"]["build_hash"]
-        distribution_version = client_info["version"]["number"]
-        # older versions (pre 6.3.0) don't expose a build_flavor property because the only (implicit) flavor was "oss".
-        distribution_flavor = client_info["version"].get("build_flavor", "oss")
-        self.metrics_store.add_meta_info(metrics.MetaInfoScope.cluster, None, "source_revision", revision)
-        self.metrics_store.add_meta_info(metrics.MetaInfoScope.cluster, None, "distribution_version", distribution_version)
-        self.metrics_store.add_meta_info(metrics.MetaInfoScope.cluster, None, "distribution_flavor", distribution_flavor)
+        with self.client.new_request_context() as request_context:
+            try:
+                client_info = self.client.info()
+            except BaseException:
+                self.logger.exception("Could not retrieve cluster version info")
+                return
+            revision = client_info["version"]["build_hash"]
+            distribution_version = client_info["version"]["number"]
+            # older versions (pre 6.3.0) don't expose a build_flavor property because the only (implicit) flavor was "oss".
+            distribution_flavor = client_info["version"].get("build_flavor", "oss")
+            self.metrics_store.add_meta_info(metrics.MetaInfoScope.cluster, None, "source_revision", revision)
+            self.metrics_store.add_meta_info(metrics.MetaInfoScope.cluster, None, "distribution_version", distribution_version)
+            self.metrics_store.add_meta_info(metrics.MetaInfoScope.cluster, None, "distribution_flavor", distribution_flavor)
 
-        info = self.client.nodes.info(node_id="_all")
+            info = self.client.nodes.info(node_id="_all")
         nodes_info = info["nodes"].values()
         for node in nodes_info:
             node_name = node["name"]
@@ -1338,16 +1339,17 @@ class ExternalEnvironmentInfo(InternalTelemetryDevice):
 
     # noinspection PyBroadException
     def on_benchmark_start(self):
-        try:
-            nodes_stats = self.client.nodes.stats(metric="_all")["nodes"].values()
-        except BaseException:
-            self.logger.exception("Could not retrieve nodes stats")
-            nodes_stats = []
-        try:
-            nodes_info = self.client.nodes.info(node_id="_all")["nodes"].values()
-        except BaseException:
-            self.logger.exception("Could not retrieve nodes info")
-            nodes_info = []
+        with self.client.new_request_context() as request_context:
+            try:
+                nodes_stats = self.client.nodes.stats(metric="_all")["nodes"].values()
+            except BaseException:
+                self.logger.exception("Could not retrieve nodes stats")
+                nodes_stats = []
+            try:
+                nodes_info = self.client.nodes.info(node_id="_all")["nodes"].values()
+            except BaseException:
+                self.logger.exception("Could not retrieve nodes info")
+                nodes_info = []
 
         for node in nodes_stats:
             node_name = node["name"]
@@ -1433,7 +1435,8 @@ class JvmStatsSummary(InternalTelemetryDevice):
         self.logger.debug("Gathering JVM stats")
         jvm_stats = {}
         try:
-            stats = self.client.nodes.stats(metric="_all")
+            with self.client.new_request_context() as request_context:
+                stats = self.client.nodes.stats(metric="_all")
         except opensearchpy.TransportError:
             self.logger.exception("Could not retrieve GC times.")
             return jvm_stats
@@ -1513,7 +1516,8 @@ class IndexStats(InternalTelemetryDevice):
     def index_stats(self):
         # noinspection PyBroadException
         try:
-            return self.client.indices.stats(metric="_all", level="shards")
+            with self.client.new_request_context() as request_context:
+                return self.client.indices.stats(metric="_all", level="shards")
         except BaseException:
             self.logger.exception("Could not retrieve index stats.")
             return {}
@@ -1596,37 +1600,38 @@ class MlBucketProcessingTime(InternalTelemetryDevice):
 
     def on_benchmark_stop(self):
         try:
-            results = self.client.search(index=".ml-anomalies-*", body={
-                "size": 0,
-                "query": {
-                    "bool": {
-                        "must": [
-                            {"term": {"result_type": "bucket"}}
-                        ]
-                    }
-                },
-                "aggs": {
-                    "jobs": {
-                        "terms": {
-                            "field": "job_id"
-                        },
-                        "aggs": {
-                            "min_pt": {
-                                "min": {"field": "processing_time_ms"}
+            with self.client.new_request_context() as request_context:
+                results = self.client.search(index=".ml-anomalies-*", body={
+                    "size": 0,
+                    "query": {
+                        "bool": {
+                            "must": [
+                                {"term": {"result_type": "bucket"}}
+                            ]
+                        }
+                    },
+                    "aggs": {
+                        "jobs": {
+                            "terms": {
+                                "field": "job_id"
                             },
-                            "max_pt": {
-                                "max": {"field": "processing_time_ms"}
-                            },
-                            "mean_pt": {
-                                "avg": {"field": "processing_time_ms"}
-                            },
-                            "median_pt": {
-                                "percentiles": {"field": "processing_time_ms", "percents": [50]}
+                            "aggs": {
+                                "min_pt": {
+                                    "min": {"field": "processing_time_ms"}
+                                },
+                                "max_pt": {
+                                    "max": {"field": "processing_time_ms"}
+                                },
+                                "mean_pt": {
+                                    "avg": {"field": "processing_time_ms"}
+                                },
+                                "median_pt": {
+                                    "percentiles": {"field": "processing_time_ms", "percents": [50]}
+                                }
                             }
                         }
                     }
-                }
-            })
+                })
         except opensearchpy.TransportError:
             self.logger.exception("Could not retrieve ML bucket processing time.")
             return
