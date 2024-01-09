@@ -568,41 +568,43 @@ class WorkerCoordinator:
         log_root = paths.test_execution_root(self.config)
 
         os_default = opensearch["default"]
-
-        if enable:
-            devices = [
-                telemetry.NodeStats(telemetry_params, opensearch, self.metrics_store),
-                telemetry.ExternalEnvironmentInfo(os_default, self.metrics_store),
-                telemetry.ClusterEnvironmentInfo(os_default, self.metrics_store),
-                telemetry.JvmStatsSummary(os_default, self.metrics_store),
-                telemetry.IndexStats(os_default, self.metrics_store),
-                telemetry.MlBucketProcessingTime(os_default, self.metrics_store),
-                telemetry.SegmentStats(log_root, os_default),
-                telemetry.CcrStats(telemetry_params, opensearch, self.metrics_store),
-                telemetry.RecoveryStats(telemetry_params, opensearch, self.metrics_store),
-                telemetry.TransformStats(telemetry_params, opensearch, self.metrics_store),
-                telemetry.SearchableSnapshotsStats(telemetry_params, opensearch, self.metrics_store),
-                telemetry.SegmentReplicationStats(telemetry_params, opensearch, self.metrics_store)
-            ]
-        else:
-            devices = []
-        self.telemetry = telemetry.Telemetry(enabled_devices, devices=devices)
+        with os_default.new_request_context() as request_context:
+            if enable:
+                devices = [
+                    telemetry.NodeStats(telemetry_params, opensearch, self.metrics_store),
+                    telemetry.ExternalEnvironmentInfo(os_default, self.metrics_store),
+                    telemetry.ClusterEnvironmentInfo(os_default, self.metrics_store),
+                    telemetry.JvmStatsSummary(os_default, self.metrics_store),
+                    telemetry.IndexStats(os_default, self.metrics_store),
+                    telemetry.MlBucketProcessingTime(os_default, self.metrics_store),
+                    telemetry.SegmentStats(log_root, os_default),
+                    telemetry.CcrStats(telemetry_params, opensearch, self.metrics_store),
+                    telemetry.RecoveryStats(telemetry_params, opensearch, self.metrics_store),
+                    telemetry.TransformStats(telemetry_params, opensearch, self.metrics_store),
+                    telemetry.SearchableSnapshotsStats(telemetry_params, opensearch, self.metrics_store),
+                    telemetry.SegmentReplicationStats(telemetry_params, opensearch, self.metrics_store)
+                ]
+            else:
+                devices = []
+            self.telemetry = telemetry.Telemetry(enabled_devices, devices=devices)
 
     def wait_for_rest_api(self, opensearch):
         os_default = opensearch["default"]
         self.logger.info("Checking if REST API is available.")
-        if client.wait_for_rest_layer(os_default, max_attempts=40):
-            self.logger.info("REST API is available.")
-        else:
-            self.logger.error("REST API layer is not yet available. Stopping benchmark.")
-            raise exceptions.SystemSetupError("OpenSearch REST API layer is not available.")
+        with os_default.new_request_context() as request_context:
+            if client.wait_for_rest_layer(os_default, max_attempts=40):
+                self.logger.info("REST API is available.")
+            else:
+                self.logger.error("REST API layer is not yet available. Stopping benchmark.")
+                raise exceptions.SystemSetupError("OpenSearch REST API layer is not available.")
 
     def retrieve_cluster_info(self, opensearch):
-        try:
-            return opensearch["default"].info()
-        except BaseException:
-            self.logger.exception("Could not retrieve cluster info on benchmark start")
-            return None
+        with opensearch["default"].new_request_context() as request_context:
+            try:
+                return opensearch["default"].info()
+            except BaseException:
+                self.logger.exception("Could not retrieve cluster info on benchmark start")
+                return None
 
     def prepare_benchmark(self, t):
         self.workload = t
@@ -1449,7 +1451,7 @@ class AsyncIoAdapter:
         def os_clients(all_hosts, all_client_options):
             opensearch = {}
             for cluster_name, cluster_hosts in all_hosts.items():
-                opensearch[cluster_name] = client.OsClientFactory(cluster_hosts, all_client_options[cluster_name]).create_async()
+                opensearch[cluster_name] = client.OsClientFactory(cluster_hosts, all_client_options[cluster_name]).create()
             return opensearch
 
         # Properly size the internal connection pool to match the number of expected clients but allow the user
@@ -1493,7 +1495,7 @@ class AsyncIoAdapter:
             shutdown_asyncgens_end = time.perf_counter()
             self.logger.info("Total time to shutdown asyncgens: %f seconds.", (shutdown_asyncgens_end - run_end))
             for s in opensearch.values():
-                await s.transport.close()
+                s.transport.close()
             transport_close_end = time.perf_counter()
             self.logger.info("Total time to close transports: %f seconds.", (shutdown_asyncgens_end - transport_close_end))
 
@@ -1578,10 +1580,17 @@ class AsyncExecutor:
                 absolute_processing_start = time.time()
                 processing_start = time.perf_counter()
                 self.schedule_handle.before_request(processing_start)
-                async with self.opensearch["default"].new_request_context() as request_context:
+
+                print("self.opensearch", str(self.opensearch))
+
+                with self.opensearch["default"].new_request_context() as request_context:
+                    print("request_context", str(request_context))
                     total_ops, total_ops_unit, request_meta_data = await execute_single(runner, self.opensearch, params, self.on_error)
+                    print("$$$$$$$$$$$$$$$$$")
                     request_start = request_context.request_start
                     request_end = request_context.request_end
+                    print("request_start", request_start)
+                    print("request_end", request_end)
 
                 processing_end = time.perf_counter()
                 service_time = request_end - request_start

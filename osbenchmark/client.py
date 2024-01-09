@@ -32,7 +32,7 @@ from urllib3.util.ssl_ import is_ipaddress
 
 from osbenchmark import exceptions, doc_link
 from osbenchmark.utils import console, convert
-
+#import osbenchmark.async_connection
 
 class RequestContextManager:
     """
@@ -46,6 +46,10 @@ class RequestContextManager:
         self.token = None
 
     async def __aenter__(self):
+        self.ctx, self.token = self.ctx_holder.init_request_context()
+        return self
+    
+    def __enter__(self):
         self.ctx, self.token = self.ctx_holder.init_request_context()
         return self
 
@@ -68,7 +72,18 @@ class RequestContextManager:
             self.ctx_holder.update_request_end(request_end)
         self.token = None
         return False
-
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # propagate earliest request start and most recent request end to parent
+        request_start = self.request_start
+        request_end = self.request_end
+        self.ctx_holder.restore_context(self.token)
+        # don't attempt to restore these values on the top-level context as they don't exist
+        if self.token.old_value != contextvars.Token.MISSING:
+            self.ctx_holder.update_request_start(request_start)
+            self.ctx_holder.update_request_end(request_end)
+        self.token = None
+        return False
 
 class RequestContextHolder:
     """
@@ -284,17 +299,28 @@ class OsClientFactory:
         # pylint: disable=import-outside-toplevel
         import opensearchpy
         from botocore.credentials import Credentials
+        from opensearchpy import Urllib3HttpConnection
 
         if "amazon_aws_log_in" not in self.client_options:
-            return opensearchpy.OpenSearch(hosts=self.hosts, ssl_context=self.ssl_context, **self.client_options)
+            class BenchmarkOpenSearch(opensearchpy.OpenSearch, RequestContextHolder):
+                pass
+            print("benchmarkopensearch printed")
+            return BenchmarkOpenSearch(hosts=self.hosts, ssl_context=self.ssl_context, **self.client_options, connection_class = Urllib3HttpConnection)
 
-        credentials = Credentials(access_key=self.aws_log_in_dict["aws_access_key_id"],
-                                  secret_key=self.aws_log_in_dict["aws_secret_access_key"],
-                                  token=self.aws_log_in_dict["aws_session_token"])
-        aws_auth = opensearchpy.Urllib3AWSV4SignerAuth(credentials, self.aws_log_in_dict["region"],
-                                                self.aws_log_in_dict["service"])
-        return opensearchpy.OpenSearch(hosts=self.hosts, use_ssl=True, verify_certs=True, http_auth=aws_auth,
-                                       connection_class=opensearchpy.Urllib3HttpConnection)
+        # credentials = Credentials(access_key=self.aws_log_in_dict["aws_access_key_id"],
+        #                           secret_key=self.aws_log_in_dict["aws_secret_access_key"],
+        #                           token=self.aws_log_in_dict["aws_session_token"])
+        # aws_auth = opensearchpy.Urllib3AWSV4SignerAuth(credentials, self.aws_log_in_dict["region"],
+        #                                         self.aws_log_in_dict["service"])
+        # # def on_request_start():
+        # #     BenchmarkOpenSearch.on_request_start()
+
+        # def on_request_end():
+        #     BenchmarkOpenSearch.on_request_end()
+        # class BenchmarkOpenSearch(opensearchpy.OpenSearch, RequestContextHolder):
+        #     pass
+        # return BenchmarkOpenSearch(hosts=self.hosts, use_ssl=True, verify_certs=True, http_auth=aws_auth,
+        #                                connection_class=osbenchmark.async_connection.Urllib3HttpConnection)
 
     def create_async(self):
         # pylint: disable=import-outside-toplevel

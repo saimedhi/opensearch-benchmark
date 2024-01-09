@@ -1274,9 +1274,9 @@ class DeleteIndex(Runner):
             if not only_if_exists:
                 await opensearch.indices.delete(index=index_name, params=request_params)
                 ops += 1
-            elif only_if_exists and await opensearch.indices.exists(index=index_name):
+            elif only_if_exists and opensearch.indices.exists(index=index_name):
                 self.logger.info("Index [%s] already exists. Deleting it.", index_name)
-                await opensearch.indices.delete(index=index_name, params=request_params)
+                opensearch.indices.delete(index=index_name, params=request_params)
                 ops += 1
 
         return {
