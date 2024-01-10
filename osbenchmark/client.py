@@ -299,7 +299,7 @@ class OsClientFactory:
         # pylint: disable=import-outside-toplevel
         import opensearchpy
         from botocore.credentials import Credentials
-        from opensearchpy import Urllib3HttpConnection
+        #from opensearchpy import Urllib3HttpConnection
 
         if "amazon_aws_log_in" not in self.client_options:
             class BenchmarkOpenSearch(opensearchpy.OpenSearch, RequestContextHolder):

@@ -152,6 +152,42 @@ class ResponseMatcher:
                 self.logger.debug("Path pattern [%s] matches path [%s].", path_pattern, path)
                 return body
 
+class RequestsHttpConnection(opensearchpy.RequestsHttpConnection):
+    def __init__(self,
+                host= "localhost",
+                port= None,
+                http_auth= None,
+                use_ssl= False,
+                ssl_assert_fingerprint=None,
+                pool_maxsize=None,
+                headers = None,
+                ssl_context = None,
+                http_compress = None,
+                opaque_id = None,
+                **kwargs,):
+        super().__init__(host=host,
+                         port=port,
+                         http_auth=http_auth,
+                         use_ssl=use_ssl,
+                         ssl_assert_fingerprint=ssl_assert_fingerprint,
+                         # provided to the base class via `maxsize` to keep base class state consistent despite Benchmark
+                         # calling the attribute differently.
+                         pool_maxsize=max(256, kwargs.get("max_connections", 0)),
+                         headers=headers,
+                         ssl_context=ssl_context,
+                         http_compress=http_compress,
+                         opaque_id=opaque_id,
+                         **kwargs,)
+                        
+
+    def perform_request(self, method, url, params=None, body=None, timeout=None, ignore=(), headers=None):
+        from osbenchmark.client import RequestContextHolder
+        request_context_holder = RequestContextHolder()
+        request_context_holder.on_request_start()
+        status, headers, raw_data = super().perform_request(method=method, url=url, params=params, body=body, timeout=timeout, ignore=ignore, headers=headers)
+        request_context_holder.on_request_end()
+        return status, headers, raw_data
+    
 class Urllib3HttpConnection(opensearchpy.Urllib3HttpConnection):
     def __init__(self,
                 host= "localhost",
