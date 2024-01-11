@@ -46,6 +46,9 @@ from osbenchmark.worker_coordinator import runner, scheduler
 from osbenchmark.workload import WorkloadProcessorRegistry, load_workload, load_workload_plugins
 from osbenchmark.utils import convert, console, net
 from osbenchmark.worker_coordinator.errors import parse_error
+from osbenchmark.client import RequestContextHolder
+            
+request_context_holder = RequestContextHolder()
 
 ##################################
 #
@@ -1449,7 +1452,7 @@ class AsyncIoAdapter:
         def os_clients(all_hosts, all_client_options):
             opensearch = {}
             for cluster_name, cluster_hosts in all_hosts.items():
-                opensearch[cluster_name] = client.OsClientFactory(cluster_hosts, all_client_options[cluster_name]).create_async()
+                opensearch[cluster_name] = client.OsClientFactory(cluster_hosts, all_client_options[cluster_name]).create()
             return opensearch
 
         # Properly size the internal connection pool to match the number of expected clients but allow the user
@@ -1493,7 +1496,7 @@ class AsyncIoAdapter:
             shutdown_asyncgens_end = time.perf_counter()
             self.logger.info("Total time to shutdown asyncgens: %f seconds.", (shutdown_asyncgens_end - run_end))
             for s in opensearch.values():
-                await s.transport.close()
+                s.transport.close()
             transport_close_end = time.perf_counter()
             self.logger.info("Total time to close transports: %f seconds.", (shutdown_asyncgens_end - transport_close_end))
 
@@ -1578,13 +1581,17 @@ class AsyncExecutor:
                 absolute_processing_start = time.time()
                 processing_start = time.perf_counter()
                 self.schedule_handle.before_request(processing_start)
-                async with self.opensearch["default"].new_request_context() as request_context:
+                with self.opensearch["default"].new_request_context() as request_context:
                     total_ops, total_ops_unit, request_meta_data = await execute_single(runner, self.opensearch, params, self.on_error)
                     request_start = request_context.request_start
                     request_end = request_context.request_end
+                    client_request_start = request_context.client_request_start
+                    client_request_end = request_context.client_request_end
 
                 processing_end = time.perf_counter()
                 service_time = request_end - request_start
+                client_processing_time = (client_request_end - client_request_start)-service_time
+                print("client_processing_time", client_processing_time)
                 processing_time = processing_end - processing_start
                 time_period = request_end - total_start
                 self.schedule_handle.after_request(processing_end, total_ops, total_ops_unit, request_meta_data)
