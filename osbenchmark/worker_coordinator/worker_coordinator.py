@@ -1449,7 +1449,24 @@ class AsyncIoAdapter:
         def os_clients(all_hosts, all_client_options):
             opensearch = {}
             for cluster_name, cluster_hosts in all_hosts.items():
-                opensearch[cluster_name] = client.OsClientFactory(cluster_hosts, all_client_options[cluster_name]).create_async()
+                print("AsyncIoAdapter.all_client_options", all_client_options)
+                print("AsyncIoAdapter.all_client_options type", type(all_client_options))
+                if "connection_class" in all_client_options["default"]:
+                    print("11111")
+                    connection = all_client_options["default"]["connection_class"].lower()
+                    
+                    if connection in {"urllib3httpconnection", "urllib3", "requestshttpconnection", "requests"}:
+                        print("22222")
+                        opensearch[cluster_name] = client.OsClientFactory(cluster_hosts, all_client_options[cluster_name]).create()
+                    elif connection == "aiohttpconnection":
+                        print("33333")
+                        opensearch[cluster_name] = client.OsClientFactory(cluster_hosts, all_client_options[cluster_name]).create_async()
+                    else:
+                        print("4444")
+                        raise Exception("Connection class not identified in client_options")
+                else:
+                    print("55555")
+                    opensearch[cluster_name] = client.OsClientFactory(cluster_hosts, all_client_options[cluster_name]).create_async()
             return opensearch
 
         # Properly size the internal connection pool to match the number of expected clients but allow the user
@@ -1493,7 +1510,10 @@ class AsyncIoAdapter:
             shutdown_asyncgens_end = time.perf_counter()
             self.logger.info("Total time to shutdown asyncgens: %f seconds.", (shutdown_asyncgens_end - run_end))
             for s in opensearch.values():
-                await s.transport.close()
+                if asyncio.iscoroutinefunction(s.transport.close):
+                    await s.transport.close()
+                else:
+                    s.transport.close()
             transport_close_end = time.perf_counter()
             self.logger.info("Total time to close transports: %f seconds.", (shutdown_asyncgens_end - transport_close_end))
 
@@ -1582,9 +1602,13 @@ class AsyncExecutor:
                     total_ops, total_ops_unit, request_meta_data = await execute_single(runner, self.opensearch, params, self.on_error)
                     request_start = request_context.request_start
                     request_end = request_context.request_end
+                    client_request_start = request_context.client_request_start
+                    client_request_end = request_context.client_request_end
 
                 processing_end = time.perf_counter()
                 service_time = request_end - request_start
+                client_processing_time = (client_request_end - client_request_start)-service_time
+                print("client_processing_time", client_processing_time)
                 processing_time = processing_end - processing_start
                 time_period = request_end - total_start
                 self.schedule_handle.after_request(processing_end, total_ops, total_ops_unit, request_meta_data)
