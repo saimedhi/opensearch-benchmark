@@ -57,15 +57,27 @@ class RequestContextManager:
     def request_end(self):
         return self.ctx["request_end"]
 
+    @property
+    def client_request_start(self):
+        return self.ctx["client_request_start"]
+
+    @property
+    def client_request_end(self):
+        return self.ctx["client_request_end"]
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         # propagate earliest request start and most recent request end to parent
         request_start = self.request_start
         request_end = self.request_end
+        client_request_start = self.client_request_start
+        client_request_end = self.client_request_end
         self.ctx_holder.restore_context(self.token)
         # don't attempt to restore these values on the top-level context as they don't exist
         if self.token.old_value != contextvars.Token.MISSING:
             self.ctx_holder.update_request_start(request_start)
             self.ctx_holder.update_request_end(request_end)
+            self.ctx_holder.update_client_request_start(client_request_start)
+            self.ctx_holder.update_client_request_end(client_request_end)
         self.token = None
         return False
 
@@ -97,6 +109,17 @@ class RequestContextHolder:
             meta["request_start"] = new_request_start
 
     @classmethod
+    def update_client_request_start(cls, new_client_request_start):
+        meta = cls.request_context.get()
+        if "request_start" not in meta:
+            meta["client_request_start"] = new_client_request_start
+
+    @classmethod
+    def update_client_request_end(cls, new_client_request_end):
+        meta = cls.request_context.get()
+        meta["client_request_end"] = new_client_request_end
+
+    @classmethod
     def update_request_end(cls, new_request_end):
         meta = cls.request_context.get()
         meta["request_end"] = new_request_end
@@ -108,6 +131,14 @@ class RequestContextHolder:
     @classmethod
     def on_request_end(cls):
         cls.update_request_end(time.perf_counter())
+
+    @classmethod
+    def on_client_request_start(cls):
+        cls.update_client_request_start(time.perf_counter())
+
+    @classmethod
+    def on_client_request_end(cls):
+        cls.update_client_request_end(time.perf_counter())
 
     @classmethod
     def return_raw_response(cls):
@@ -283,18 +314,32 @@ class OsClientFactory:
     def create(self):
         # pylint: disable=import-outside-toplevel
         import opensearchpy
+        import osbenchmark.sync_connection
         from botocore.credentials import Credentials
-
+        
+        if "connection_class" in self.client_options:
+            connection = self.client_options.pop("connection_class", None)
+            if connection.lower() in {"urllib3httpconnection", "urllib3"}:
+                connection_class = osbenchmark.sync_connection.Urllib3HttpConnection
+            elif connection.lower() in {"requestshttpconnection", "requests"}:
+                connection_class = osbenchmark.sync_connection.RequestsHttpConnection
+        else:
+            connection_class = osbenchmark.sync_connection.Urllib3HttpConnection
+            
         if "amazon_aws_log_in" not in self.client_options:
-            return opensearchpy.OpenSearch(hosts=self.hosts, ssl_context=self.ssl_context, **self.client_options)
+            class BenchmarkOpenSearch(opensearchpy.OpenSearch, RequestContextHolder):
+                pass
+            return BenchmarkOpenSearch(hosts=self.hosts, ssl_context=self.ssl_context, **self.client_options, connection_class=connection_class)
 
         credentials = Credentials(access_key=self.aws_log_in_dict["aws_access_key_id"],
                                   secret_key=self.aws_log_in_dict["aws_secret_access_key"],
                                   token=self.aws_log_in_dict["aws_session_token"])
         aws_auth = opensearchpy.Urllib3AWSV4SignerAuth(credentials, self.aws_log_in_dict["region"],
                                                 self.aws_log_in_dict["service"])
-        return opensearchpy.OpenSearch(hosts=self.hosts, use_ssl=True, verify_certs=True, http_auth=aws_auth,
-                                       connection_class=opensearchpy.Urllib3HttpConnection)
+        class BenchmarkOpenSearch(opensearchpy.OpenSearch, RequestContextHolder):
+            pass
+        return BenchmarkOpenSearch(hosts=self.hosts, use_ssl=True, verify_certs=True, http_auth=aws_auth,
+                                       connection_class=connection_class)
 
     def create_async(self):
         # pylint: disable=import-outside-toplevel
@@ -332,7 +377,7 @@ class OsClientFactory:
 
         class BenchmarkAsyncOpenSearch(opensearchpy.AsyncOpenSearch, RequestContextHolder):
             pass
-
+        self.client_options.pop("connection_class", None)      
         if "amazon_aws_log_in" not in self.client_options:
             return BenchmarkAsyncOpenSearch(hosts=self.hosts,
                                             connection_class=osbenchmark.async_connection.AIOHttpConnection,
