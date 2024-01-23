@@ -1595,9 +1595,15 @@ class AsyncExecutor:
                     total_ops, total_ops_unit, request_meta_data = await execute_single(runner, self.opensearch, params, self.on_error)
                     request_start = request_context.request_start
                     request_end = request_context.request_end
+                    client_request_start = request_context.client_request_start
+                    client_request_end = request_context.client_request_end
 
                 processing_end = time.perf_counter()
                 service_time = request_end - request_start
+                client_processing_time = (client_request_end - client_request_start)-service_time
+                print("client_processing_time", client_processing_time)
+                print("server_processing_time/ service time", client_processing_time)
+                
                 processing_time = processing_end - processing_start
                 time_period = request_end - total_start
                 self.schedule_handle.after_request(processing_end, total_ops, total_ops_unit, request_meta_data)

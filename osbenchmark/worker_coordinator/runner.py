@@ -44,11 +44,14 @@ from opensearchpy import ConnectionTimeout
 
 from osbenchmark import exceptions, workload
 from osbenchmark.utils import convert
+from osbenchmark.client import RequestContextHolder
 
 # Mapping from operation type to specific runner
 from osbenchmark.utils.parse import parse_int_parameter, parse_string_parameter
 
 __RUNNERS = {}
+
+request_context_holder = RequestContextHolder()
 
 
 def register_default_runners():
@@ -169,6 +172,7 @@ class Runner:
         self.logger = logging.getLogger(__name__)
 
     async def __aenter__(self):
+        request_context_holder.on_client_request_start()
         return self
 
     async def __call__(self, opensearch, params):
@@ -184,6 +188,7 @@ class Runner:
         raise NotImplementedError("abstract operation")
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        request_context_holder.on_client_request_end()
         return False
 
     def _default_kw_params(self, params):
