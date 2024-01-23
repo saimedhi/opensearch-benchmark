@@ -105,21 +105,25 @@ class RequestContextHolder:
         meta = cls.request_context.get()
         # this can happen if multiple requests are sent on the wire for one logical request (e.g. scrolls)
         if "request_start" not in meta:
+            print("### request_start",new_request_start)
             meta["request_start"] = new_request_start
 
     @classmethod
     def update_client_request_start(cls, new_client_request_start):
         meta = cls.request_context.get()
         if "request_start" not in meta:
+            print("### client request_start",new_client_request_start)
             meta["client_request_start"] = new_client_request_start
 
     @classmethod
     def update_client_request_end(cls, new_client_request_end):
         meta = cls.request_context.get()
+        print("### request_end",new_client_request_end)
         meta["client_request_end"] = new_client_request_end
 
     @classmethod
     def update_request_end(cls, new_request_end):
+        print("### request_end",new_request_end)
         meta = cls.request_context.get()
         meta["request_end"] = new_request_end
 

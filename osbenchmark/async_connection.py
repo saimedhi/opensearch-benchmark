@@ -10,6 +10,7 @@ import asyncio
 import json
 import logging
 from typing import Optional, List
+import time
 
 import aiohttp
 import opensearchpy
@@ -228,6 +229,14 @@ class AIOHttpConnection(opensearchpy.AIOHttpConnection):
             connector=connector,
             trace_configs=self._trace_configs,
         )
+    async def perform_request(self, method, url, params=None, body=None, timeout=None, ignore=(), headers=None):
+        request_sent_time = time.perf_counter()
+        print("request start", request_sent_time)
+        status, headers, raw_data = await super().perform_request(method=method, url=url, params=params, body=body, timeout=timeout, ignore=ignore, headers=self.headers)
+        response_received_time = time.perf_counter()
+        print("request end", response_received_time)
+        print("aiohttp server time", response_received_time - request_sent_time)
+        return status, headers, raw_data
 
 
 class AsyncHttpConnection(opensearchpy.AsyncHttpConnection):

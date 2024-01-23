@@ -7,6 +7,7 @@
 # GitHub history for details.
 
 import opensearchpy
+import time
 
 
 class RequestsHttpConnection(opensearchpy.RequestsHttpConnection):
@@ -40,8 +41,13 @@ class RequestsHttpConnection(opensearchpy.RequestsHttpConnection):
             from osbenchmark.client import RequestContextHolder
             request_context_holder = RequestContextHolder()
             request_context_holder.on_request_start()
+            request_sent_time = time.perf_counter()
             status, headers, raw_data = super().perform_request(method=method, url=url, params=params, body=body, timeout=timeout,
                                                                 allow_redirects=allow_redirects, ignore=ignore, headers=headers)
+            response_received_time = time.perf_counter()
+            print("request start", request_sent_time)
+            print("request end", response_received_time)
+            print("requests server time", response_received_time - request_sent_time)
             request_context_holder.on_request_end()
             return status, headers, raw_data
         except LookupError:
@@ -81,8 +87,13 @@ class Urllib3HttpConnection(opensearchpy.Urllib3HttpConnection):
             from osbenchmark.client import RequestContextHolder
             request_context_holder = RequestContextHolder()
             request_context_holder.on_request_start()
+            request_sent_time = time.perf_counter()
+            print("request start", request_sent_time)
             status, headers, raw_data = super().perform_request(method=method, url=url, params=params, body=body,
                                                                 timeout=timeout, ignore=ignore, headers=headers)
+            response_received_time = time.perf_counter()
+            print("request end", response_received_time)
+            print("urllib3 server time", response_received_time - request_sent_time)
             request_context_holder.on_request_end()
             return status, headers, raw_data
         except LookupError:
